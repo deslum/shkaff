@@ -1,7 +1,6 @@
 # Shkaff
 Database backup system
 
-
-The bigger they are, the harder they fall!
+Store for copies after fuckup
 
 ![Shkaff block scheme](Shkaff.png)
