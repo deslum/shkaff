@@ -1,4 +1,4 @@
-# Shkaff - Store for copies after fuckup
+# Shkaff - store for copies after fuckup
 
 ## Archetecture
 
