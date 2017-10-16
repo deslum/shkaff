@@ -1,6 +1,5 @@
-# Shkaff
-## Database backup system
+# Shkaff - Store for copies after fuckup
 
-Store for copies after fuckup
+## Archetecture
 
 ![Shkaff block scheme](Shkaff.png)
