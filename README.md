@@ -1,5 +1,5 @@
 # Shkaff - store for copies after fuckup
 
-## Archetecture
+## Architecture
 
 ![Shkaff block scheme](Shkaff.png)
