@@ -1,0 +1,12 @@
+PostgreSQL:
+  restart: always
+  image: postgres:10
+  ports:
+    - "5432:5432"
+  environment:
+    - DEBUG=true
+    - POSTGRES_PASSWORD=
+    - POSTGRES_USER=
+    - POSTGRES_DB=shkaff
+  volumes:
+    - ./shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
