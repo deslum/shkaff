@@ -1,0 +1,11 @@
+{
+	"RMQ_HOST": "",
+	"RMQ_PORT": "",
+	"RMQ_USER": "",
+	"RMQ_PASS": "",
+	"RMQ_VHOST": "",
+	"DATABASE_HOST": "",
+	"DATABASE_PORT": "",
+	"DATABASE_USER": "",
+	"DATABASE_PASS": ""
+}
