@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS shkaff.users (
   CONSTRAINT users_id_UNIQUE UNIQUE  (user_id),
   PRIMARY KEY (user_id),
   CONSTRAINT login_UNIQUE UNIQUE  (login),
-  CONSTRAINT api_token_UNIQUE UNIQUE  (api_token))
+  CONSTRAINT api_token_UNIQUE UNIQUE  (api_token));
 
 CREATE SEQUENCE shkaff.types_seq;
 
@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS shkaff.types (
   cmd_dump VARCHAR(16) NULL,
   cmd_restore VARCHAR(16) NULL,
   PRIMARY KEY (type_id),
-  CONSTRAINT type_id_UNIQUE UNIQUE  (type_id))
-
+  CONSTRAINT type_id_UNIQUE UNIQUE  (type_id));
 
 CREATE SEQUENCE shkaff.db_settings_seq;
 
@@ -45,9 +44,9 @@ CREATE TABLE IF NOT EXISTS shkaff.db_settings (
     FOREIGN KEY (type)
     REFERENCES shkaff.types (type_id)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE NO ACTION);
  
- CREATE INDEX fk_db_settings_types1_idx ON mydb.db_settings (type);
+ CREATE INDEX fk_db_settings_types1_idx ON shkaff.db_settings (type);
 
 CREATE SEQUENCE shkaff.tasks_seq;
 
@@ -67,9 +66,9 @@ CREATE TABLE IF NOT EXISTS shkaff.tasks (
     FOREIGN KEY (db_settings_id , db_settings_type)
     REFERENCES shkaff.db_settings (db_id , type)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE NO ACTION);
  
- CREATE INDEX fk_tasks_db_settings1_idx ON mydb.tasks (db_settings_id, db_settings_type);
+ CREATE INDEX fk_tasks_db_settings1_idx ON shkaff.tasks (db_settings_id, db_settings_type);
 
 CREATE TABLE IF NOT EXISTS shkaff.users_has_db_settings (
   users_user_id SMALLINT NOT NULL,
@@ -85,7 +84,7 @@ CREATE TABLE IF NOT EXISTS shkaff.users_has_db_settings (
     FOREIGN KEY (db_settings_db_id)
     REFERENCES shkaff.db_settings (db_id)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON UPDATE NO ACTION);
  
  CREATE INDEX fk_users_has_db_settings_db_settings1_idx ON shkaff.users_has_db_settings (db_settings_db_id);
  CREATE INDEX fk_users_has_db_settings_users_idx ON shkaff.users_has_db_settings (users_user_id);
