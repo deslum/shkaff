@@ -1,11 +1,13 @@
 {
-	"RMQ_HOST": "",
-	"RMQ_PORT": "",
-	"RMQ_USER": "",
-	"RMQ_PASS": "",
-	"RMQ_VHOST": "",
-	"DATABASE_HOST": "",
-	"DATABASE_PORT": "",
-	"DATABASE_USER": "",
-	"DATABASE_PASS": ""
+        "RMQ_HOST": "localhost",
+        "RMQ_PORT": 5672,
+        "RMQ_USER": "test",
+        "RMQ_PASS": "test",
+        "RMQ_VHOST": "shkaff",
+        "DATABASE_HOST": "localhost",
+        "DATABASE_PORT": 5432,
+        "DATABASE_USER": "test",
+        "DATABASE_PASS": "test",
+        "DATABASE_DB": "shkaff"
 }
+
