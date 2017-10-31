@@ -5,10 +5,10 @@ import (
 	"log"
 	"time"
 
-	"database/sql"
 	"encoding/json"
 	"io/ioutil"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/streadway/amqp"
 )
@@ -35,10 +35,10 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 1"
+	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = true"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
-	REFRESH_DATABASE_SCAN = 5
+	REFRESH_DATABASE_SCAN = 10
 )
 
 type ControlConfig struct {
@@ -124,10 +124,10 @@ func initPSQL(cf ControlConfig) (ps *pSQL) {
 		cf.DATABASE_DB)
 	return
 }
-func (ps *pSQL) Connect() (db *sql.DB) {
+func (ps *pSQL) Connect() (db *sqlx.DB) {
 	var err error
 	log.Println(ps.uri)
-	db, err = sql.Open(POSTGRES, ps.uri)
+	db, err = sqlx.Connect(POSTGRES, ps.uri)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -161,21 +161,25 @@ func initAMQP(cf ControlConfig) (qp *rmq) {
 }
 
 type Task struct {
-	Taskid           int       `json:"taskid"`
-	Task_name        string    `json:"task_name"`
-	Verbose          int       `json:"verbose"`
-	Start_time       time.Time `json:"start_time"`
-	Is_active        bool      `json:"is_active"`
-	Thread_count     int       `json:"thread_count"`
-	Db_settings_id   int64     `json:"db_settings_id"`
-	Db_settings_type int64     `json:"db_settings_type"`
+	Task_id          int       `db:"task_id"`
+	Database         string    `db:"database"`
+	Sheet            string    `db:"sheet"`
+	Task_name        string    `db:"task_name"`
+	Verb             int       `db:"verb"`
+	Start_time       time.Time `db:"start_time"`
+	Is_active        bool      `db:"is_active"`
+	Thread_count     int       `db:"thread_count"`
+	Gzip             bool      `db:"gzip"`
+	Ipv6             bool      `db:"ipv6"`
+	Db_settings_id   int64     `db:"db_settings_id"`
+	Db_settings_type int64     `db:"db_settings_type"`
 }
 
 var opCache []Task
 
 func isDublicateTask(opc []Task, task Task) (result bool) {
 	for _, oc := range opc {
-		if oc.Taskid == task.Taskid {
+		if oc.Task_id == task.Task_id {
 			return true
 		}
 	}
@@ -186,11 +190,11 @@ func remove(slice []Task, s int) []Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func TaskSender(db *sql.DB, rmqChannel *amqp.Channel) {
+func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 	for {
 		for numEl, cache := range opCache {
 			queue, err := rmqChannel.QueueDeclare(
-				"for_worker", //name
+				"for_worker", // name
 				true,         // durable
 				false,        // delete when unused
 				false,        // exclusive
@@ -213,7 +217,7 @@ func TaskSender(db *sql.DB, rmqChannel *amqp.Channel) {
 				if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
 					log.Println("Publish", err)
 				} else {
-					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, 0, cache.Taskid)
+					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.Task_id)
 					if err != nil {
 						log.Fatalln(err)
 					}
@@ -225,33 +229,28 @@ func TaskSender(db *sql.DB, rmqChannel *amqp.Channel) {
 	}
 }
 
-func Aggregator(db *sql.DB, task Task) {
+func Aggregator(db *sqlx.DB) {
+	var task = Task{}
 	var psqlUpdateTime *time.Timer
 	psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
 	for {
 		select {
 		case <-psqlUpdateTime.C:
 			request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix())
-			if rows, err := db.Query(request); err != nil {
+			rows, err := db.Queryx(request)
+			if err != nil {
 				log.Println(err)
-			} else {
-				for rows.Next() {
-					if err := rows.Scan(&task.Taskid,
-						&task.Task_name,
-						&task.Verbose,
-						&task.Start_time,
-						&task.Is_active,
-						&task.Thread_count,
-						&task.Db_settings_id,
-						&task.Db_settings_type); err != nil {
-						log.Println("Scan", err)
-					}
-					if !isDublicateTask(opCache, task) {
-						opCache = append(opCache, task)
-					}
+				psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+				continue
+			}
+			for rows.Next() {
+				if err := rows.StructScan(&task); err != nil {
+					log.Println("Scan", err)
+					psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+					continue
 				}
-				if err = rows.Err(); err != nil {
-					log.Println("Rows", err)
+				if !isDublicateTask(opCache, task) {
+					opCache = append(opCache, task)
 				}
 			}
 			psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
@@ -260,20 +259,19 @@ func Aggregator(db *sql.DB, task Task) {
 }
 
 func main() {
-	var task Task
 	ch := make(chan bool)
-	
+
 	controlConfig := initControlConfig(CONFIG_FILE)
 	controlConfig.validateConfig()
 
 	pSQL := initPSQL(controlConfig)
 	qp := initAMQP(controlConfig)
-	
+
 	db := pSQL.Connect()
 	rmqChannel := qp.Connect()
-	
-	go Aggregator(db, task)
+
+	go Aggregator(db)
 	go TaskSender(db, rmqChannel)
-	
+
 	<-ch
 }
