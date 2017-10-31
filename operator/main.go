@@ -1,16 +1,16 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 
-	"github.com/streadway/amqp"
+	"database/sql"
+	"encoding/json"
+	"io/ioutil"
 
 	_ "github.com/lib/pq"
+	"github.com/streadway/amqp"
 )
 
 const (
@@ -35,10 +35,10 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT task_name FROM shkaff.tasks WHERE start_time > to_timestamp(%d)"
+	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 1"
+	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 5
-	TASKS_TIME            = 10
 )
 
 type ControlConfig struct {
@@ -139,14 +139,12 @@ func (qp *rmq) Connect() (channel *amqp.Channel) {
 	log.Println(qp.uri)
 	conn, err := amqp.Dial(qp.uri)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("Connection", err)
 	}
-	defer conn.Close()
 	channel, err = conn.Channel()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln("Channel", err)
 	}
-	defer channel.Close()
 	return channel
 
 }
@@ -163,19 +161,21 @@ func initAMQP(cf ControlConfig) (qp *rmq) {
 }
 
 type Task struct {
-	taskid       int
-	task_name    string
-	verbose      int
-	start_time   int64
-	is_active    bool
-	thread_count int
+	Taskid           int       `json:"taskid"`
+	Task_name        string    `json:"task_name"`
+	Verbose          int       `json:"verbose"`
+	Start_time       time.Time `json:"start_time"`
+	Is_active        bool      `json:"is_active"`
+	Thread_count     int       `json:"thread_count"`
+	Db_settings_id   int64     `json:"db_settings_id"`
+	Db_settings_type int64     `json:"db_settings_type"`
 }
 
 var opCache []Task
 
 func isDublicateTask(opc []Task, task Task) (result bool) {
 	for _, oc := range opc {
-		if oc.taskid == task.taskid {
+		if oc.Taskid == task.Taskid {
 			return true
 		}
 	}
@@ -196,26 +196,34 @@ func main() {
 	qp := initAMQP(controlConfig)
 	db := pSQL.Connect()
 	rmqChannel := qp.Connect()
+
 	//Aggregator
 	psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
-
 	go func() {
 		for {
 			select {
 			case <-psqlUpdateTime.C:
-				request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix()+TASKS_TIME)
-				rows, err := db.Query(request)
-				defer rows.Close()
-				if err != nil {
+				request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix())
+				if rows, err := db.Query(request); err != nil {
 					log.Println(err)
 				} else {
 					for rows.Next() {
-						if err := rows.Scan(&task); err != nil {
-							log.Println(err)
+						if err := rows.Scan(&task.Taskid,
+							&task.Task_name,
+							&task.Verbose,
+							&task.Start_time,
+							&task.Is_active,
+							&task.Thread_count,
+							&task.Db_settings_id,
+							&task.Db_settings_type); err != nil {
+							log.Println("Scan", err)
 						}
 						if !isDublicateTask(opCache, task) {
 							opCache = append(opCache, task)
 						}
+					}
+					if err = rows.Err(); err != nil {
+						log.Println("Rows", err)
 					}
 				}
 				psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
@@ -236,26 +244,30 @@ func main() {
 					nil,          // arguments
 				)
 				if err != nil {
-					log.Println(err)
+					log.Println("Queue", err)
 				}
-				if cache.start_time > time.Now().Unix() {
+				if time.Now().Unix() > 0 {
 					body, err := json.Marshal(cache)
 					if err != nil {
-						log.Println(err)
+						log.Println("Body", err)
 						continue
 					}
 					pub := amqp.Publishing{
-						ContentType: "text/plain",
-						Body:        []byte(body),
+						ContentType: "application/json",
+						Body:        body,
 					}
 					if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
-						log.Println(err)
+						log.Println("Publish", err)
 					} else {
+						_, err = db.Exec(REQUESR_UPDATE_ACTIVE, 0, cache.Taskid)
+						if err != nil {
+							log.Fatalln(err)
+						}
 						opCache = remove(opCache, numEl)
 					}
 				}
 			}
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 	<-ch
