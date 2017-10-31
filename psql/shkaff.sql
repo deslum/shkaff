@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS shkaff.db_settings (
   type SMALLINT NOT NULL,
   PRIMARY KEY (db_id, type),
   CONSTRAINT db_id_UNIQUE UNIQUE  (db_id),
-  CONSTRAINT db_name_UNIQUE UNIQUE  (custom_name)
- ,
+  CONSTRAINT db_name_UNIQUE UNIQUE  (custom_name),
   CONSTRAINT fk_db_settings_types1
     FOREIGN KEY (type)
     REFERENCES shkaff.types (type_id)
@@ -55,7 +54,7 @@ CREATE TABLE IF NOT EXISTS shkaff.tasks (
   task_name VARCHAR(32) NULL,
   verb SMALLINT NULL,
   start_time TIMESTAMP(0) NULL,
-  is_active SMALLINT NULL,
+  is_active boolean NOT NULL,
   thread_count SMALLINT NULL,
   ipv6 BOOLEAN NOT NULL,
   database VARCHAR(40) NULL,
@@ -92,3 +91,95 @@ CREATE TABLE IF NOT EXISTS shkaff.users_has_db_settings (
  
  CREATE INDEX fk_users_has_db_settings_db_settings1_idx ON shkaff.users_has_db_settings (db_settings_db_id);
  CREATE INDEX fk_users_has_db_settings_users_idx ON shkaff.users_has_db_settings (users_user_id);
+
+
+INSERT INTO shkaff.users (
+    user_id,
+    api_token,
+    first_name,
+    is_active,
+    is_admin,
+    last_name,
+    "login",
+    "password")
+VALUES (
+    1,
+    '12345',
+    'Yuri',
+    true,
+    true,
+    'Bukatkin',
+    'admin',
+    'admin'
+);
+
+INSERT INTO shkaff.types (
+    type_id,
+    cmd_cli,
+    cmd_dump,
+    cmd_restore,
+    "type")
+VALUES (
+    1,
+    'mongo',
+    'mongodump',
+    'mongorestore',
+    'mongo'
+);
+
+INSERT INTO shkaff.db_settings (
+    db_id,
+    "type",
+    custom_name,
+    "host",
+    is_active,
+    port,
+    "server_name",
+    user_id)
+VALUES (
+    1,
+    1,
+    'Test',
+    '192.168.67.30',
+    true,
+    27017,
+    'TestAdmin',
+    1
+);
+
+INSERT INTO shkaff.users_has_db_settings (
+    db_settings_db_id,
+    users_user_id)
+VALUES (
+    1,
+    1
+);
+
+
+INSERT INTO shkaff.tasks (
+    task_id,
+    "database",
+    db_settings_id,
+    db_settings_type,
+    gzip,
+    ipv6,
+    is_active,
+    sheet,
+    start_time,
+    task_name,
+    thread_count,
+    verb)
+VALUES (
+    1,
+    '',
+    1,
+    1,
+    true,
+    false,
+    true,
+    '',
+    to_timestamp(1509465648),
+    'FirstTask',
+    5,
+    3
+);
