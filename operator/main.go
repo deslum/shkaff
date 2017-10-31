@@ -35,7 +35,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 1"
+	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 0"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 5
@@ -186,89 +186,94 @@ func remove(slice []Task, s int) []Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func TaskSender(db *sql.DB, rmqChannel *amqp.Channel) {
+	for {
+		for numEl, cache := range opCache {
+			queue, err := rmqChannel.QueueDeclare(
+				"for_worker", //name
+				true,         // durable
+				false,        // delete when unused
+				false,        // exclusive
+				false,        // no-wait
+				nil,          // arguments
+			)
+			if err != nil {
+				log.Println("Queue", err)
+			}
+			if time.Now().Unix() > cache.Start_time.Unix() {
+				body, err := json.Marshal(cache)
+				if err != nil {
+					log.Println("Body", err)
+					continue
+				}
+				pub := amqp.Publishing{
+					ContentType: "application/json",
+					Body:        body,
+				}
+				if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
+					log.Println("Publish", err)
+				} else {
+					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, 0, cache.Taskid)
+					if err != nil {
+						log.Fatalln(err)
+					}
+					opCache = remove(opCache, numEl)
+				}
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func Aggregator(db *sql.DB, task Task) {
+	var psqlUpdateTime *time.Timer
+	psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+	for {
+		select {
+		case <-psqlUpdateTime.C:
+			request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix())
+			if rows, err := db.Query(request); err != nil {
+				log.Println(err)
+			} else {
+				for rows.Next() {
+					if err := rows.Scan(&task.Taskid,
+						&task.Task_name,
+						&task.Verbose,
+						&task.Start_time,
+						&task.Is_active,
+						&task.Thread_count,
+						&task.Db_settings_id,
+						&task.Db_settings_type); err != nil {
+						log.Println("Scan", err)
+					}
+					if !isDublicateTask(opCache, task) {
+						opCache = append(opCache, task)
+					}
+				}
+				if err = rows.Err(); err != nil {
+					log.Println("Rows", err)
+				}
+			}
+			psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+		}
+	}
+}
+
 func main() {
 	var task Task
 	ch := make(chan bool)
-	var psqlUpdateTime *time.Timer
+	
 	controlConfig := initControlConfig(CONFIG_FILE)
 	controlConfig.validateConfig()
+
 	pSQL := initPSQL(controlConfig)
 	qp := initAMQP(controlConfig)
+	
 	db := pSQL.Connect()
 	rmqChannel := qp.Connect()
-
-	//Aggregator
-	psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
-	go func() {
-		for {
-			select {
-			case <-psqlUpdateTime.C:
-				request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix())
-				if rows, err := db.Query(request); err != nil {
-					log.Println(err)
-				} else {
-					for rows.Next() {
-						if err := rows.Scan(&task.Taskid,
-							&task.Task_name,
-							&task.Verbose,
-							&task.Start_time,
-							&task.Is_active,
-							&task.Thread_count,
-							&task.Db_settings_id,
-							&task.Db_settings_type); err != nil {
-							log.Println("Scan", err)
-						}
-						if !isDublicateTask(opCache, task) {
-							opCache = append(opCache, task)
-						}
-					}
-					if err = rows.Err(); err != nil {
-						log.Println("Rows", err)
-					}
-				}
-				psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
-			}
-		}
-	}()
-
-	//TaskSender
-	go func() {
-		for {
-			for numEl, cache := range opCache {
-				queue, err := rmqChannel.QueueDeclare(
-					"for_worker", //name
-					true,         // durable
-					false,        // delete when unused
-					false,        // exclusive
-					false,        // no-wait
-					nil,          // arguments
-				)
-				if err != nil {
-					log.Println("Queue", err)
-				}
-				if time.Now().Unix() > 0 {
-					body, err := json.Marshal(cache)
-					if err != nil {
-						log.Println("Body", err)
-						continue
-					}
-					pub := amqp.Publishing{
-						ContentType: "application/json",
-						Body:        body,
-					}
-					if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
-						log.Println("Publish", err)
-					} else {
-						_, err = db.Exec(REQUESR_UPDATE_ACTIVE, 0, cache.Taskid)
-						if err != nil {
-							log.Fatalln(err)
-						}
-						opCache = remove(opCache, numEl)
-					}
-				}
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
+	
+	go Aggregator(db, task)
+	go TaskSender(db, rmqChannel)
+	
 	<-ch
 }
