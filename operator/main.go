@@ -35,7 +35,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 0"
+	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = 1"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 5
