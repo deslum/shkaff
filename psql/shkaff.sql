@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS shkaff.db_settings (
   user_id SMALLINT NULL,
   is_active BOOLEAN NOT NULL,
   type SMALLINT NOT NULL,
+  db_user VARCHAR(40) NULL,
+  db_password VARCHAR(40) NULL, 
   PRIMARY KEY (db_id, type),
   CONSTRAINT db_id_UNIQUE UNIQUE  (db_id),
   CONSTRAINT db_name_UNIQUE UNIQUE  (custom_name),
@@ -135,7 +137,9 @@ INSERT INTO shkaff.db_settings (
     is_active,
     port,
     "server_name",
-    user_id)
+    user_id,
+    db_user,
+    db_password)
 VALUES (
     1,
     1,
@@ -144,7 +148,9 @@ VALUES (
     true,
     27017,
     'TestAdmin',
-    1
+    1,
+    'db_admin',
+    'db_pass'
 );
 
 INSERT INTO shkaff.users_has_db_settings (
