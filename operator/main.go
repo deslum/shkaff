@@ -35,7 +35,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, database, sheet, db_user, db_password  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
+	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 10
@@ -68,18 +68,19 @@ type rmq struct {
 }
 
 type Task struct {
-	TaskID      int       `db:"task_id"`
-	Database    string    `db:"database"`
-	Sheet       string    `db:"sheet"`
-	Verb        int       `db:"verb"`
-	ThreadCount int       `db:"thread_count"`
-	Gzip        bool      `db:"gzip"`
-	Ipv6        bool      `db:"ipv6"`
-	Host        string    `db:"host"`
-	Port        int       `db:"port"`
-	StartTime   time.Time `db:"start_time"`
-	DBUser      string    `db:"db_user"`
-	DBPassword  string    `db:"db_password"`
+	TaskID      int       `json:"task_id" db:"task_id"`
+	Databases   string    `json:"-" db:"databases"`
+	Verb        int       `json:"verb" db:"verb"`
+	ThreadCount int       `json:"thread_count" db:"thread_count"`
+	Gzip        bool      `json:"gzip" db:"gzip"`
+	Ipv6        bool      `json:"ipv6" db:"ipv6"`
+	Host        string    `json:"host" db:"host"`
+	Port        int       `json:"port" db:"port"`
+	StartTime   time.Time `json:"start_time" db:"start_time"`
+	DBUser      string    `json:"db_user" db:"db_user"`
+	DBPassword  string    `json:"db_password" db:"db_password"`
+	Database    string    `json:"database"`
+	Sheet       string    `json:"sheet"`
 }
 
 func initControlConfig(filename string) (cc ControlConfig) {
@@ -193,6 +194,7 @@ func remove(slice []Task, s int) []Task {
 }
 
 func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
+	databases := make(map[string][]string)
 	for {
 		for numEl, cache := range opCache {
 			queue, err := rmqChannel.QueueDeclare(
@@ -207,25 +209,38 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 				log.Println("Queue", err)
 			}
 			if time.Now().Unix() > cache.StartTime.Unix() {
-				body, err := json.Marshal(cache)
+				json.Unmarshal([]byte(cache.Databases), &databases)
 				if err != nil {
-					log.Println("Body", err)
+					log.Println("Unmarshal databases", err)
 					continue
 				}
-				pub := amqp.Publishing{
-					ContentType: "application/json",
-					Body:        body,
-				}
-				if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
-					log.Println("Publish", err)
-				} else {
-					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID)
-					if err != nil {
-						log.Fatalln(err)
+				for base, sheets := range databases {
+					for _, sheet := range sheets {
+						cache.Database = base
+						cache.Sheet = sheet
+						body, err := json.Marshal(cache)
+						if err != nil {
+							log.Println("Body", err)
+							continue
+						}
+						pub := amqp.Publishing{
+							ContentType: "application/json",
+							Body:        body,
+						}
+
+						if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
+							log.Println("Publish", err)
+							continue
+						} else {
+							_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID)
+							if err != nil {
+								log.Fatalln(err)
+							}
+						}
 					}
-					opCache = remove(opCache, numEl)
 				}
 			}
+			opCache = remove(opCache, numEl)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
