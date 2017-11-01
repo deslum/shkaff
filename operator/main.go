@@ -35,7 +35,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT * FROM shkaff.tasks WHERE start_time <= to_timestamp(%d) AND is_active = true"
+	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, database, sheet  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 10
@@ -161,25 +161,23 @@ func initAMQP(cf ControlConfig) (qp *rmq) {
 }
 
 type Task struct {
-	Task_id          int       `db:"task_id"`
-	Database         string    `db:"database"`
-	Sheet            string    `db:"sheet"`
-	Task_name        string    `db:"task_name"`
-	Verb             int       `db:"verb"`
-	Start_time       time.Time `db:"start_time"`
-	Is_active        bool      `db:"is_active"`
-	Thread_count     int       `db:"thread_count"`
-	Gzip             bool      `db:"gzip"`
-	Ipv6             bool      `db:"ipv6"`
-	Db_settings_id   int64     `db:"db_settings_id"`
-	Db_settings_type int64     `db:"db_settings_type"`
+	TaskID      int       `db:"task_id"`
+	Database    string    `db:"database"`
+	Sheet       string    `db:"sheet"`
+	Verb        int       `db:"verb"`
+	ThreadCount int       `db:"thread_count"`
+	Gzip        bool      `db:"gzip"`
+	Ipv6        bool      `db:"ipv6"`
+	Host        string    `db:"host"`
+	Port        int       `db:"port"`
+	StartTime   time.Time `db:"start_time"`
 }
 
 var opCache []Task
 
 func isDublicateTask(opc []Task, task Task) (result bool) {
 	for _, oc := range opc {
-		if oc.Task_id == task.Task_id {
+		if oc.TaskID == task.TaskID {
 			return true
 		}
 	}
@@ -204,7 +202,7 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 			if err != nil {
 				log.Println("Queue", err)
 			}
-			if time.Now().Unix() > cache.Start_time.Unix() {
+			if time.Now().Unix() > cache.StartTime.Unix() {
 				body, err := json.Marshal(cache)
 				if err != nil {
 					log.Println("Body", err)
@@ -217,7 +215,7 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 				if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
 					log.Println("Publish", err)
 				} else {
-					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.Task_id)
+					_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID)
 					if err != nil {
 						log.Fatalln(err)
 					}
