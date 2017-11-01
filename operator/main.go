@@ -41,6 +41,10 @@ const (
 	REFRESH_DATABASE_SCAN = 10
 )
 
+var (
+	opCache []Task
+)
+
 type ControlConfig struct {
 	RMQ_HOST      string `json:"RMQ_HOST"`
 	RMQ_PORT      int    `json:"RMQ_PORT"`
@@ -61,6 +65,21 @@ type pSQL struct {
 
 type rmq struct {
 	uri string
+}
+
+type Task struct {
+	TaskID      int       `db:"task_id"`
+	Database    string    `db:"database"`
+	Sheet       string    `db:"sheet"`
+	Verb        int       `db:"verb"`
+	ThreadCount int       `db:"thread_count"`
+	Gzip        bool      `db:"gzip"`
+	Ipv6        bool      `db:"ipv6"`
+	Host        string    `db:"host"`
+	Port        int       `db:"port"`
+	StartTime   time.Time `db:"start_time"`
+	DBUser      string    `db:"db_user"`
+	DBPassword  string    `db:"db_password"`
 }
 
 func initControlConfig(filename string) (cc ControlConfig) {
@@ -160,23 +179,6 @@ func initAMQP(cf ControlConfig) (qp *rmq) {
 	return
 }
 
-type Task struct {
-	TaskID      int       `db:"task_id"`
-	Database    string    `db:"database"`
-	Sheet       string    `db:"sheet"`
-	Verb        int       `db:"verb"`
-	ThreadCount int       `db:"thread_count"`
-	Gzip        bool      `db:"gzip"`
-	Ipv6        bool      `db:"ipv6"`
-	Host        string    `db:"host"`
-	Port        int       `db:"port"`
-	StartTime   time.Time `db:"start_time"`
-	DBUser      string    `db:"db_user"`
-	DBPassword  string    `db:"db_password"`
-}
-
-var opCache []Task
-
 func isDublicateTask(opc []Task, task Task) (result bool) {
 	for _, oc := range opc {
 		if oc.TaskID == task.TaskID {
@@ -272,6 +274,5 @@ func main() {
 
 	go Aggregator(db)
 	go TaskSender(db, rmqChannel)
-
 	<-ch
 }
