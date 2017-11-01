@@ -35,7 +35,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, database, sheet  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
+	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, database, sheet, db_user, db_password  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	REFRESH_DATABASE_SCAN = 10
@@ -171,6 +171,8 @@ type Task struct {
 	Host        string    `db:"host"`
 	Port        int       `db:"port"`
 	StartTime   time.Time `db:"start_time"`
+	DBUser      string    `db:"db_user"`
+	DBPassword  string    `db:"db_password"`
 }
 
 var opCache []Task
