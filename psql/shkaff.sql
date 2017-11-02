@@ -125,7 +125,7 @@ VALUES (
     'mongo',
     'mongodump',
     'mongorestore',
-    'mongo'
+    'mongodb'
 );
 
 INSERT INTO shkaff.db_settings (
