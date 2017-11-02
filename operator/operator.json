@@ -3,11 +3,13 @@
         "RMQ_PORT": 5672,
         "RMQ_USER": "test",
         "RMQ_PASS": "test",
-        "RMQ_VHOST": "shkaff",
+        "RMQ_VHOST": "shkaff_workers",
         "DATABASE_HOST": "localhost",
         "DATABASE_PORT": 5432,
         "DATABASE_USER": "test",
         "DATABASE_PASS": "test",
-        "DATABASE_DB": "shkaff"
+        "DATABASE_DB": "shkaff",
+        "REFRESH_DATABASE_SCAN": 30
 }
+
 
