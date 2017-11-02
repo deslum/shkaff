@@ -36,7 +36,7 @@ const (
 	INVALID_AMQP_USER     = "AMQP user name is empty"
 	INVALID_AMQP_PASSWORD = "AMQP password is empty"
 
-	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
+	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password,tp.\"type\" as db_type FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id INNER JOIN shkaff.types tp ON tp.type_id = db.\"type\" WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 )
 
@@ -71,6 +71,7 @@ type rmq struct {
 type Task struct {
 	TaskID      int       `json:"task_id" db:"task_id"`
 	Databases   string    `json:"-" db:"databases"`
+	DBType      string    `json:"-" db:"db_type"`
 	Verb        int       `json:"verb" db:"verb"`
 	ThreadCount int       `json:"thread_count" db:"thread_count"`
 	Gzip        bool      `json:"gzip" db:"gzip"`
@@ -203,12 +204,12 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 	for {
 		for numEl, cache := range opCache {
 			queue, err := rmqChannel.QueueDeclare(
-				"mongodb", // name
-				true,      // durable
-				false,     // delete when unused
-				false,     // exclusive
-				false,     // no-wait
-				nil,       // arguments
+				cache.DBType, // name
+				true,         // durable
+				false,        // delete when unused
+				false,        // exclusive
+				false,        // no-wait
+				nil,          // arguments
 			)
 			if err != nil {
 				log.Println("Queue", err)
