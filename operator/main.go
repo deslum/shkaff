@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	CONFIG_FILE           = "operator.json"
-	DEFAULT_HOST          = "localhost"
-	DEFAULT_DATABASE_PORT = 5432
-	DEFAULT_AMQP_PORT     = 5672
-	DEFAULT_DATABASE_DB   = "postgres"
+	CONFIG_FILE                   = "operator.json"
+	DEFAULT_HOST                  = "localhost"
+	DEFAULT_DATABASE_PORT         = 5432
+	DEFAULT_AMQP_PORT             = 5672
+	DEFAULT_DATABASE_DB           = "postgres"
+	DEFAULT_REFRESH_DATABASE_SCAN = 60
 
 	URI_TEMPLATE = "%s://%s:%s@%s:%d/%s?sslmode=disable"
 	POSTGRES     = "postgres"
@@ -37,8 +38,6 @@ const (
 
 	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password  FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
-
-	REFRESH_DATABASE_SCAN = 10
 )
 
 var (
@@ -46,21 +45,23 @@ var (
 )
 
 type ControlConfig struct {
-	RMQ_HOST      string `json:"RMQ_HOST"`
-	RMQ_PORT      int    `json:"RMQ_PORT"`
-	RMQ_USER      string `json:"RMQ_USER"`
-	RMQ_PASS      string `json:"RMQ_PASS"`
-	RMQ_VHOST     string `json:"RMQ_VHOST"`
-	DATABASE_HOST string `json:"DATABASE_HOST"`
-	DATABASE_PORT int    `json:"DATABASE_PORT"`
-	DATABASE_USER string `json:"DATABASE_USER"`
-	DATABASE_PASS string `json:"DATABASE_PASS"`
-	DATABASE_DB   string `json:"DATABASE_DB"`
-	DATABASE_SSL  bool   `json:"DATABASE_SSL"`
+	RMQ_HOST              string `json:"RMQ_HOST"`
+	RMQ_PORT              int    `json:"RMQ_PORT"`
+	RMQ_USER              string `json:"RMQ_USER"`
+	RMQ_PASS              string `json:"RMQ_PASS"`
+	RMQ_VHOST             string `json:"RMQ_VHOST"`
+	DATABASE_HOST         string `json:"DATABASE_HOST"`
+	DATABASE_PORT         int    `json:"DATABASE_PORT"`
+	DATABASE_USER         string `json:"DATABASE_USER"`
+	DATABASE_PASS         string `json:"DATABASE_PASS"`
+	DATABASE_DB           string `json:"DATABASE_DB"`
+	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
+	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
 }
 
 type pSQL struct {
-	uri string
+	uri             string
+	refreshTimeScan int
 }
 
 type rmq struct {
@@ -131,6 +132,9 @@ func (cc *ControlConfig) validateConfig() {
 	if cc.RMQ_PASS == "" {
 		log.Fatalln(INVALID_AMQP_PASSWORD)
 	}
+	if cc.REFRESH_DATABASE_SCAN == 0 {
+		cc.REFRESH_DATABASE_SCAN = DEFAULT_REFRESH_DATABASE_SCAN
+	}
 	return
 }
 
@@ -142,6 +146,7 @@ func initPSQL(cf ControlConfig) (ps *pSQL) {
 		cf.DATABASE_HOST,
 		cf.DATABASE_PORT,
 		cf.DATABASE_DB)
+	ps.refreshTimeScan = cf.REFRESH_DATABASE_SCAN
 	return
 }
 func (ps *pSQL) Connect() (db *sqlx.DB) {
@@ -198,12 +203,12 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 	for {
 		for numEl, cache := range opCache {
 			queue, err := rmqChannel.QueueDeclare(
-				"for_worker", // name
-				true,         // durable
-				false,        // delete when unused
-				false,        // exclusive
-				false,        // no-wait
-				nil,          // arguments
+				"mongodb", // name
+				true,      // durable
+				false,     // delete when unused
+				false,     // exclusive
+				false,     // no-wait
+				nil,       // arguments
 			)
 			if err != nil {
 				log.Println("Queue", err)
@@ -246,10 +251,10 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 	}
 }
 
-func Aggregator(db *sqlx.DB) {
+func Aggregator(db *sqlx.DB, refreshTimeScan int) {
 	var task = Task{}
 	var psqlUpdateTime *time.Timer
-	psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+	psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 	for {
 		select {
 		case <-psqlUpdateTime.C:
@@ -257,20 +262,20 @@ func Aggregator(db *sqlx.DB) {
 			rows, err := db.Queryx(request)
 			if err != nil {
 				log.Println(err)
-				psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+				psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 				continue
 			}
 			for rows.Next() {
 				if err := rows.StructScan(&task); err != nil {
 					log.Println("Scan", err)
-					psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+					psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 					continue
 				}
 				if !isDublicateTask(opCache, task) {
 					opCache = append(opCache, task)
 				}
 			}
-			psqlUpdateTime = time.NewTimer(REFRESH_DATABASE_SCAN * time.Second)
+			psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 		}
 	}
 }
@@ -287,7 +292,7 @@ func main() {
 	db := pSQL.Connect()
 	rmqChannel := qp.Connect()
 
-	go Aggregator(db)
+	go Aggregator(db, controlConfig.REFRESH_DATABASE_SCAN)
 	go TaskSender(db, rmqChannel)
 	<-ch
 }
