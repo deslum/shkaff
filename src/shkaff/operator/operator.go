@@ -21,10 +21,6 @@ const (
 	DEFAULT_DATABASE_DB           = "postgres"
 	DEFAULT_REFRESH_DATABASE_SCAN = 60
 
-	URI_TEMPLATE = "%s://%s:%s@%s:%d/%s?sslmode=disable"
-	POSTGRES     = "postgres"
-	AMQP         = "amqp"
-
 	INVALID_DATABASE_HOST     = "Database host in config file is empty. Shkaff set '%s'\n"
 	INVALID_DATABASE_PORT     = "Database port %d in config file invalid. Shkaff set '%d'\n"
 	INVALID_DATABASE_DB       = "Database name in config file is empty. Shkaff set '%s'\n"
@@ -62,10 +58,6 @@ type ControlConfig struct {
 type pSQL struct {
 	uri             string
 	refreshTimeScan int
-}
-
-type rmq struct {
-	uri string
 }
 
 type Task struct {
@@ -157,32 +149,6 @@ func (ps *pSQL) Connect() (db *sqlx.DB) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	return
-}
-
-func (qp *rmq) Connect() (channel *amqp.Channel) {
-	var err error
-	log.Println(qp.uri)
-	conn, err := amqp.Dial(qp.uri)
-	if err != nil {
-		log.Fatalln("Connection", err)
-	}
-	channel, err = conn.Channel()
-	if err != nil {
-		log.Fatalln("Channel", err)
-	}
-	return channel
-
-}
-
-func initAMQP(cf ControlConfig) (qp *rmq) {
-	qp = new(rmq)
-	qp.uri = fmt.Sprintf(URI_TEMPLATE, AMQP,
-		cf.RMQ_USER,
-		cf.RMQ_PASS,
-		cf.RMQ_HOST,
-		cf.RMQ_PORT,
-		cf.RMQ_VHOST)
 	return
 }
 

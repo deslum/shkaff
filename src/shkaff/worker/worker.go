@@ -1,4 +1,4 @@
-package shkaff
+package commander
 
 import (
 	"encoding/json"
@@ -115,6 +115,14 @@ func (qp *rmq) Connect() (channel *amqp.Channel) {
 	}
 	return channel
 
+}
+
+func Init(){
+
+}
+
+func Run(){
+	
 }
 
 func initAMQP(cf ControlConfig) (qp *rmq) {

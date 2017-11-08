@@ -1,4 +1,4 @@
-package mongo
+package mongodb
 
 import (
 	"fmt"
@@ -92,4 +92,3 @@ func TestMongoParams_ParamsToString(t *testing.T) {
 		})
 	}
 }
-
