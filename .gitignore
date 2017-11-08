@@ -6,6 +6,7 @@
 .LSOverride
 Icon
 pkg/
+bin/
 
 # Thumbnails
 ._*
