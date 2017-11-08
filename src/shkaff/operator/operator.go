@@ -10,6 +10,7 @@ import (
 
 	"encoding/json"
 
+	_ "github.com/bmizerany/pq"
 	"github.com/jmoiron/sqlx"
 	"github.com/streadway/amqp"
 )
