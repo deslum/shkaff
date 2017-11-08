@@ -1,28 +1,33 @@
-package psql
+package maindb
 
 import (
 	"fmt"
 	"log"
+	"shkaff/config"
 
 	"github.com/jmoiron/sqlx"
 )
 
 const (
-	URI_TEMPLATE = "postgres://%s:%s@%s:%d/%s?sslmode=disable"
+	uriTemplate = "postgres://%s:%s@%s:%d/%s?sslmode=disable"
 )
 
-type pSQL struct {
+type PSQL struct {
 	uri             string
-	db              *sqlx.DB
-	refreshTimeScan int
+	DB              *sqlx.DB
+	RefreshTimeScan int
 }
 
-func initPSQL(user, password, host string, port int, database_db string) (ps *pSQL) {
+func InitPSQL(cfg config.ShkaffConfig) (ps *PSQL) {
 	var err error
-	ps = new(pSQL)
-	ps.uri = fmt.Sprintf(URI_TEMPLATE, user, password, host, port, database_db)
-	ps.refreshTimeScan = 10
-	if ps.db, err = sqlx.Connect("postgres", ps.uri); err != nil {
+	ps = new(PSQL)
+	ps.uri = fmt.Sprintf(cfg.DATABASE_USER,
+		cfg.DATABASE_PASS,
+		cfg.DATABASE_HOST,
+		cfg.DATABASE_PORT,
+		cfg.DATABASE_DB)
+	ps.RefreshTimeScan = cfg.REFRESH_DATABASE_SCAN
+	if ps.DB, err = sqlx.Connect("postgres", ps.uri); err != nil {
 		log.Fatalln(err)
 	}
 	return

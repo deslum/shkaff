@@ -1,37 +1,20 @@
-package shkaff
+package operator
 
 import (
 	"fmt"
 	"log"
+	"shkaff/config"
+	"shkaff/drivers/maindb"
+	"shkaff/drivers/rmq/producer"
 	"time"
 
 	"encoding/json"
-	"io/ioutil"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"github.com/streadway/amqp"
 )
 
 const (
-	CONFIG_FILE                   = "operator.json"
-	DEFAULT_HOST                  = "localhost"
-	DEFAULT_DATABASE_PORT         = 5432
-	DEFAULT_AMQP_PORT             = 5672
-	DEFAULT_DATABASE_DB           = "postgres"
-	DEFAULT_REFRESH_DATABASE_SCAN = 60
-
-	INVALID_DATABASE_HOST     = "Database host in config file is empty. Shkaff set '%s'\n"
-	INVALID_DATABASE_PORT     = "Database port %d in config file invalid. Shkaff set '%d'\n"
-	INVALID_DATABASE_DB       = "Database name in config file is empty. Shkaff set '%s'\n"
-	INVALID_DATABASE_USER     = "Database user name is empty"
-	INVALID_DATABASE_PASSWORD = "Database password is empty"
-
-	INVALID_AMQP_HOST     = "AMQP host in config file is empty. Shkaff set '%s'\n"
-	INVALID_AMQP_PORT     = "AMPQ port %d in config file invalid. Shkaff set '%d'\n"
-	INVALID_AMQP_USER     = "AMQP user name is empty"
-	INVALID_AMQP_PASSWORD = "AMQP password is empty"
-
 	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password,tp.\"type\" as db_type FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id INNER JOIN shkaff.types tp ON tp.type_id = db.\"type\" WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 )
@@ -40,24 +23,9 @@ var (
 	opCache []Task
 )
 
-type ControlConfig struct {
-	RMQ_HOST              string `json:"RMQ_HOST"`
-	RMQ_PORT              int    `json:"RMQ_PORT"`
-	RMQ_USER              string `json:"RMQ_USER"`
-	RMQ_PASS              string `json:"RMQ_PASS"`
-	RMQ_VHOST             string `json:"RMQ_VHOST"`
-	DATABASE_HOST         string `json:"DATABASE_HOST"`
-	DATABASE_PORT         int    `json:"DATABASE_PORT"`
-	DATABASE_USER         string `json:"DATABASE_USER"`
-	DATABASE_PASS         string `json:"DATABASE_PASS"`
-	DATABASE_DB           string `json:"DATABASE_DB"`
-	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
-	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
-}
-
-type pSQL struct {
-	uri             string
-	refreshTimeScan int
+type Operator struct {
+	postgres *maindb.PSQL
+	rabbit   *producer.RMQ
 }
 
 type Task struct {
@@ -75,81 +43,6 @@ type Task struct {
 	DBPassword  string    `json:"db_password" db:"db_password"`
 	Database    string    `json:"database"`
 	Sheet       string    `json:"sheet"`
-}
-
-func initControlConfig(filename string) (cc ControlConfig) {
-	var file []byte
-	var err error
-	if file, err = ioutil.ReadFile(filename); err != nil {
-		log.Fatalln(err)
-		return
-	}
-	if err := json.Unmarshal(file, &cc); err != nil {
-		log.Fatalln(err)
-		return
-	}
-	return
-}
-
-func (cc *ControlConfig) validateConfig() {
-	if cc.DATABASE_HOST == "" {
-		log.Printf(INVALID_DATABASE_HOST, DEFAULT_HOST)
-		cc.DATABASE_HOST = DEFAULT_HOST
-	}
-	if cc.DATABASE_PORT < 1025 || cc.DATABASE_PORT > 65535 {
-		log.Printf(INVALID_DATABASE_PORT, cc.DATABASE_PORT, DEFAULT_DATABASE_PORT)
-		cc.DATABASE_PORT = DEFAULT_DATABASE_PORT
-	}
-	if cc.DATABASE_DB == "" {
-		log.Printf(INVALID_DATABASE_DB, DEFAULT_DATABASE_DB)
-		cc.DATABASE_DB = DEFAULT_DATABASE_DB
-	}
-	if cc.DATABASE_USER == "" {
-		log.Fatalln(INVALID_DATABASE_USER)
-	}
-	if cc.DATABASE_PASS == "" {
-		log.Fatalln(INVALID_DATABASE_PASSWORD)
-	}
-
-	if cc.RMQ_HOST == "" {
-		log.Printf(INVALID_AMQP_HOST, DEFAULT_HOST)
-		cc.RMQ_HOST = DEFAULT_HOST
-	}
-	if cc.RMQ_PORT < 1025 || cc.RMQ_PORT > 65535 {
-		log.Printf(INVALID_AMQP_PORT, cc.RMQ_PORT, DEFAULT_AMQP_PORT)
-		cc.RMQ_PORT = DEFAULT_AMQP_PORT
-	}
-	if cc.RMQ_USER == "" {
-		log.Fatalln(INVALID_AMQP_USER)
-	}
-	if cc.RMQ_PASS == "" {
-		log.Fatalln(INVALID_AMQP_PASSWORD)
-	}
-	if cc.REFRESH_DATABASE_SCAN == 0 {
-		cc.REFRESH_DATABASE_SCAN = DEFAULT_REFRESH_DATABASE_SCAN
-	}
-	return
-}
-
-func initPSQL(cf ControlConfig) (ps *pSQL) {
-	ps = new(pSQL)
-	ps.uri = fmt.Sprintf(URI_TEMPLATE, POSTGRES,
-		cf.DATABASE_USER,
-		cf.DATABASE_PASS,
-		cf.DATABASE_HOST,
-		cf.DATABASE_PORT,
-		cf.DATABASE_DB)
-	ps.refreshTimeScan = cf.REFRESH_DATABASE_SCAN
-	return
-}
-func (ps *pSQL) Connect() (db *sqlx.DB) {
-	var err error
-	log.Println(ps.uri)
-	db, err = sqlx.Connect(POSTGRES, ps.uri)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return
 }
 
 func isDublicateTask(opc []Task, task Task) (result bool) {
@@ -247,19 +140,17 @@ func Aggregator(db *sqlx.DB, refreshTimeScan int) {
 	}
 }
 
-func main() {
+func InitOperator(cfg config.ShkaffConfig) (o *Operator) {
+	o = &Operator{
+		postgres: maindb.InitPSQL(cfg),
+		rabbit:   producer.InitAMQPProducer(cfg),
+	}
+	return
+}
+
+func (o *Operator) Run() {
 	ch := make(chan bool)
-
-	controlConfig := initControlConfig(CONFIG_FILE)
-	controlConfig.validateConfig()
-
-	pSQL := initPSQL(controlConfig)
-	qp := initAMQP(controlConfig)
-
-	db := pSQL.Connect()
-	rmqChannel := qp.Connect()
-
-	go Aggregator(db, controlConfig.REFRESH_DATABASE_SCAN)
-	go TaskSender(db, rmqChannel)
+	go Aggregator(o.postgres.DB, o.postgres.RefreshTimeScan)
+	go TaskSender(o.postgres.DB, o.rabbit.Channel)
 	<-ch
 }

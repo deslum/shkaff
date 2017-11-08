@@ -3,6 +3,7 @@ package producer
 import (
 	"fmt"
 	"log"
+	"shkaff/config"
 
 	"github.com/streadway/amqp"
 )
@@ -14,28 +15,32 @@ const (
 type RMQ struct {
 	uri        string
 	queueName  string
-	channel    *amqp.Channel
-	connect    *amqp.Connection
-	publishing *amqp.Publishing
+	Channel    *amqp.Channel
+	Connect    *amqp.Connection
+	Publishing *amqp.Publishing
 }
 
-func InitAMQPProducer(user, password, host string, port int, vhost, queueName string) (qp *RMQ) {
+func InitAMQPProducer(cfg config.ShkaffConfig) (qp *RMQ) {
 	qp = new(RMQ)
-	qp.uri = fmt.Sprintf(URI_TEMPLATE, user, password, host, port, vhost)
-	qp.queueName = queueName
-	qp.InitConnection()
+	qp.uri = fmt.Sprintf(URI_TEMPLATE, cfg.RMQ_USER,
+		cfg.RMQ_PASS,
+		cfg.RMQ_HOST,
+		cfg.RMQ_PORT,
+		cfg.RMQ_VHOST)
+	qp.queueName = "mongodb"
+	qp.initConnection()
 	return
 }
 
-func (qp *RMQ) InitConnection() {
+func (qp *RMQ) initConnection() {
 	var err error
-	if qp.connect, err = amqp.Dial(qp.uri); err != nil {
+	if qp.Connect, err = amqp.Dial(qp.uri); err != nil {
 		log.Panicln(err)
 	}
-	if qp.channel, err = qp.connect.Channel(); err != nil {
+	if qp.Channel, err = qp.Connect.Channel(); err != nil {
 		log.Panicln(err)
 	}
-	if _, err = qp.channel.QueueDeclare(
+	if _, err = qp.Channel.QueueDeclare(
 		qp.queueName, // name
 		true,         // durable
 		false,        // delete when unused
@@ -45,13 +50,13 @@ func (qp *RMQ) InitConnection() {
 	); err != nil {
 		log.Fatalln(err)
 	}
-	qp.publishing = new(amqp.Publishing)
-	qp.publishing.ContentType = "application/json"
+	qp.Publishing = new(amqp.Publishing)
+	qp.Publishing.ContentType = "application/json"
 }
 
 func (qp *RMQ) Publish(body string) (err error) {
-	qp.publishing.Body = []byte(body)
-	if err = qp.channel.Publish("", qp.queueName, false, false, *qp.publishing); err != nil {
+	qp.Publishing.Body = []byte(body)
+	if err = qp.Channel.Publish("", qp.queueName, false, false, *qp.Publishing); err != nil {
 		return
 	}
 	return
