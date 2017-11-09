@@ -133,6 +133,7 @@ func InitOperator(cfg config.ShkaffConfig) (oper *Operator) {
 }
 
 func (oper *Operator) Run() {
+	log.Println("Start Operator")
 	ch := make(chan bool)
 	go oper.Aggregator()
 	go oper.TaskSender()

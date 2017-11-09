@@ -26,7 +26,6 @@ func InitPSQL(cfg config.ShkaffConfig) (ps *PSQL) {
 		cfg.DATABASE_HOST,
 		cfg.DATABASE_PORT,
 		cfg.DATABASE_DB)
-	fmt.Println(ps.uri)
 	ps.RefreshTimeScan = cfg.REFRESH_DATABASE_SCAN
 	if ps.DB, err = sqlx.Connect("postgres", ps.uri); err != nil {
 		log.Println(err)

@@ -4,6 +4,7 @@ import (
 	"log"
 	"shkaff/config"
 	"shkaff/operator"
+	"shkaff/worker"
 )
 
 type Creater interface {
@@ -19,6 +20,8 @@ func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 	switch action {
 	case "Operator":
 		srv = operator.InitOperator(cfg)
+	case "Worker":
+		srv = worker.InitWorker(cfg)
 	default:
 		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
@@ -26,11 +29,14 @@ func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 }
 
 func main() {
+	ch := make(chan bool)
 	cfg := config.InitControlConfig()
-	servicesName := []string{"Operator"}
+	servicesName := []string{"Operator", "Worker"}
 	service := new(shkaff)
 	for _, name := range servicesName {
-		srv := service.Init(name, cfg)
-		srv.Run()
+		var s Service
+		s = service.Init(name, cfg)
+		go s.Run()
 	}
+	<-ch
 }
