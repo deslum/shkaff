@@ -7,16 +7,16 @@ import (
 )
 
 type Creater interface {
-	Init(action string, cfg config.ShkaffConfig) *Microservice
+	Init(action string, cfg config.ShkaffConfig) *Service
 }
-type Microservice interface {
+type Service interface {
 	Run()
 }
 
 type Factory struct{}
 
-func (self *Factory) Init(action string, cfg config.ShkaffConfig) Microservice {
-	var srv Microservice
+func (self *Factory) Init(action string, cfg config.ShkaffConfig) Service {
+	var srv Service
 	switch action {
 	case "Operator":
 		srv = operator.InitOperator(cfg)
