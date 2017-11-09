@@ -7,7 +7,7 @@
 Icon
 pkg/
 bin/
-github.com/
+src/github.com/
 
 # Thumbnails
 ._*
