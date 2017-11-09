@@ -10,3 +10,17 @@ PostgreSQL:
     - POSTGRES_DB=shkaff
   volumes:
     - ./shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
+
+MongoDB:
+  restart: always
+  image: mongo:latest
+  environment:
+    - MONGODB_USER=test
+    - MONGODB_DATABASE=test
+    - MONGODB_PASS=test
+  ports:
+    - "27017:27017"
+  volumes:
+    - /srv/docker/mongodb:/var/lib/mongodb
+  command:
+    - --storageEngine=wiredTiger
