@@ -2,9 +2,11 @@ package worker
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"shkaff/config"
 	"shkaff/drivers/maindb"
+	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
 	"time"
@@ -39,6 +41,8 @@ func (w *Worker) StartWorker() {
 		if err := json.Unmarshal(message.Body, &task); err != nil {
 			log.Println(err, "Failed JSON parse")
 		}
+		mg := mongodb.New(task.Host, task.Port, task.DBUser, task.DBPassword, task.Ipv6, task.Database, task.Sheet, task.Gzip, task.ThreadCount)
+		fmt.Println(mg.ParamsToString())
 		message.Ack(false)
 	}
 }

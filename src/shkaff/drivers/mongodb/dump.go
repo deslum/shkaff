@@ -37,7 +37,7 @@ type MongoParams struct {
 func New(host string, port int, login, password string, ipv6 bool, database, collection string,
 	gzip bool, parallelCollectionsNum int) (mp MongoParams) {
 
-	if err := net.ParseIP(host); err != nil {
+	if err := net.ParseIP(host); err == nil {
 		log.Fatalf("MongoDB Host %s invalid \n", host)
 	}
 	if port < 1024 || port > 65535 {
