@@ -54,8 +54,8 @@ func (qp *RMQ) initConnection() {
 	qp.Publishing.ContentType = "application/json"
 }
 
-func (qp *RMQ) Publish(body string) (err error) {
-	qp.Publishing.Body = []byte(body)
+func (qp *RMQ) Publish(body []byte) (err error) {
+	qp.Publishing.Body = body
 	if err = qp.Channel.Publish("", qp.queueName, false, false, *qp.Publishing); err != nil {
 		return
 	}

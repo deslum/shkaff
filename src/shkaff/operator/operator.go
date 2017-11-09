@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 
 	_ "github.com/bmizerany/pq"
-	"github.com/streadway/amqp"
 )
 
 const (
@@ -61,23 +60,11 @@ func remove(slice []Task, s int) []Task {
 func (oper *Operator) TaskSender() {
 	databases := make(map[string][]string)
 	db := oper.postgres.DB
-	rmqChannel := oper.rabbit.Channel
+	rabbit := oper.rabbit
 	for {
 		for numEl, cache := range opCache {
-			queue, err := rmqChannel.QueueDeclare(
-				cache.DBType, // name
-				true,         // durable
-				false,        // delete when unused
-				false,        // exclusive
-				false,        // no-wait
-				nil,          // arguments
-			)
-			if err != nil {
-				log.Println("Queue", err)
-			}
 			if time.Now().Unix() > cache.StartTime.Unix() {
-				json.Unmarshal([]byte(cache.Databases), &databases)
-				if err != nil {
+				if err := json.Unmarshal([]byte(cache.Databases), &databases); err != nil {
 					log.Println("Unmarshal databases", err)
 					continue
 				}
@@ -90,19 +77,12 @@ func (oper *Operator) TaskSender() {
 							log.Println("Body", err)
 							continue
 						}
-						pub := amqp.Publishing{
-							ContentType: "application/json",
-							Body:        body,
-						}
-
-						if err := rmqChannel.Publish("", queue.Name, false, false, pub); err != nil {
+						if err := rabbit.Publish(body); err != nil {
 							log.Println("Publish", err)
 							continue
-						} else {
-							_, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID)
-							if err != nil {
-								log.Fatalln(err)
-							}
+						}
+						if _, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
+							log.Fatalln(err)
 						}
 					}
 				}
