@@ -13,23 +13,22 @@ type Service interface {
 	Run()
 }
 
-type Factory struct{}
+type shkaff struct{}
 
-func (self *Factory) Init(action string, cfg config.ShkaffConfig) Service {
-	var srv Service
+func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 	switch action {
 	case "Operator":
 		srv = operator.InitOperator(cfg)
 	default:
 		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
-	return srv
+	return
 }
 
 func main() {
 	cfg := config.InitControlConfig()
 	servicesName := []string{"Operator"}
-	service := new(Factory)
+	service := new(shkaff)
 	for _, name := range servicesName {
 		srv := service.Init(name, cfg)
 		srv.Run()
