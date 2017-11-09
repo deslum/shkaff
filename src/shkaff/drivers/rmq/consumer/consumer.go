@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"log"
 	"shkaff/config"
+	"shkaff/consts"
 
 	"github.com/streadway/amqp"
-)
-
-const (
-	uriTempalte = "amqp://%s:%s@%s:%d/%s"
 )
 
 type RMQ struct {
@@ -23,7 +20,7 @@ type RMQ struct {
 
 func InitAMQPConsumer(cfg config.ShkaffConfig) (qp *RMQ) {
 	qp = new(RMQ)
-	qp.uri = fmt.Sprintf(uriTempalte, cfg.RMQ_USER,
+	qp.uri = fmt.Sprintf(consts.RMQ_URI_TEMPLATE, cfg.RMQ_USER,
 		cfg.RMQ_PASS,
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,

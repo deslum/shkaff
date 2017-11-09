@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"log"
 	"shkaff/config"
+	"shkaff/consts"
 
 	"github.com/jmoiron/sqlx"
-)
-
-const (
-	uriTemplate = "postgres://%s:%s@%s:%d/%s?sslmode=disable"
 )
 
 type PSQL struct {
@@ -21,7 +18,7 @@ type PSQL struct {
 func InitPSQL(cfg config.ShkaffConfig) (ps *PSQL) {
 	var err error
 	ps = new(PSQL)
-	ps.uri = fmt.Sprintf(uriTemplate, cfg.DATABASE_USER,
+	ps.uri = fmt.Sprintf(consts.PSQL_URI_TEMPLATE, cfg.DATABASE_USER,
 		cfg.DATABASE_PASS,
 		cfg.DATABASE_HOST,
 		cfg.DATABASE_PORT,

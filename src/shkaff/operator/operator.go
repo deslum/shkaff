@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"shkaff/config"
+	"shkaff/consts"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/rmq/producer"
 	"time"
@@ -11,11 +12,6 @@ import (
 	"encoding/json"
 
 	_ "github.com/lib/pq"
-)
-
-const (
-	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password,tp.\"type\" as db_type FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id INNER JOIN shkaff.types tp ON tp.type_id = db.\"type\" WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
-	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 )
 
 var (
@@ -81,7 +77,7 @@ func (oper *Operator) TaskSender() {
 							log.Println("Publish", err)
 							continue
 						}
-						if _, err = db.Exec(REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
+						if _, err = db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
 							log.Fatalln(err)
 						}
 					}
@@ -102,7 +98,7 @@ func (oper *Operator) Aggregator() {
 	for {
 		select {
 		case <-psqlUpdateTime.C:
-			request := fmt.Sprintf(REQUEST_GET_STARTTIME, time.Now().Unix())
+			request := fmt.Sprintf(consts.REQUEST_GET_STARTTIME, time.Now().Unix())
 			rows, err := db.Queryx(request)
 			if err != nil {
 				log.Println(err)

@@ -10,17 +10,6 @@ import (
 	"time"
 )
 
-const (
-	INVALID_AMQP_HOST     = "AMQP host in config file is empty. Shkaff set '%s'\n"
-	INVALID_AMQP_PORT     = "AMPQ port %d in config file invalid. Shkaff set '%d'\n"
-	INVALID_AMQP_USER     = "AMQP user name is empty"
-	INVALID_AMQP_PASSWORD = "AMQP password is empty"
-)
-
-var (
-	opCache []Task
-)
-
 type Worker struct {
 	postgres   *maindb.PSQL
 	statRabbit *producer.RMQ
