@@ -2,4 +2,4 @@
 
 ## Architecture
 
-![Shkaff block scheme](Shkaff.png)
+![Shkaff block scheme](models/Shkaff.png)

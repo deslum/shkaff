@@ -9,7 +9,7 @@ PostgreSQL:
     - POSTGRES_USER=test
     - POSTGRES_DB=shkaff
   volumes:
-    - ./shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
+    - ./maindb/shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
 
 MongoDB:
   restart: always
