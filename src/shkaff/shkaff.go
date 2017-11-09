@@ -21,7 +21,7 @@ func (self *Factory) Init(action string, cfg config.ShkaffConfig) Microservice {
 	case "Operator":
 		srv = operator.InitOperator(cfg)
 	default:
-		log.Fatalf("Unknown Microservice name %s\n", action)
+		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
 	return srv
 }
