@@ -2,7 +2,6 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"shkaff/config"
 	"shkaff/drivers/maindb"
@@ -42,7 +41,7 @@ func (w *Worker) StartWorker() {
 			log.Println(err, "Failed JSON parse")
 		}
 		mg := mongodb.New(task.Host, task.Port, task.DBUser, task.DBPassword, task.Ipv6, task.Database, task.Sheet, task.Gzip, task.ThreadCount)
-		fmt.Println(mg.ParamsToString())
+		mg.Dump()
 		message.Ack(false)
 	}
 }

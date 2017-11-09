@@ -13,7 +13,7 @@ const (
 	dumpCommand            = "mongodump"
 	hostKey                = "--host"
 	portKey                = "--port"
-	loginKey               = "--login"
+	loginKey               = "--username"
 	passKey                = "--password"
 	ipv6Key                = "--ipv6"
 	databaseKey            = "--db"
