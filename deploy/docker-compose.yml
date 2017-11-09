@@ -1,6 +1,6 @@
 PostgreSQL:
   restart: always
-  image: postgres:10
+  image: postgres:latest
   ports:
     - "5432:5432"
   environment:
@@ -24,3 +24,16 @@ MongoDB:
     - /srv/docker/mongodb:/var/lib/mongodb
   command:
     - --storageEngine=wiredTiger
+
+RabbitMQ:
+    restart: always
+    image: "rabbitmq:latest"
+    environment:
+      - RABBITMQ_DEFAULT_USER=shkaff
+      - RABBITMQ_DEFAULT_PASS=shkaff
+      - RABBITMQ_DEFAULT_VHOST=shkaff_workers
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:    
+      - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"

@@ -143,13 +143,13 @@ VALUES (
     1,
     1,
     'Test',
-    '192.168.67.30',
+    '127.0.0.1',
     true,
     27017,
     'TestAdmin',
     1,
-    'db_admin',
-    'db_pass'
+    '',
+    ''
 );
 
 INSERT INTO shkaff.users_has_db_settings (
