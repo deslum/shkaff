@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 
 	_ "github.com/bmizerany/pq"
-	"github.com/jmoiron/sqlx"
 	"github.com/streadway/amqp"
 )
 
@@ -59,8 +58,10 @@ func remove(slice []Task, s int) []Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
+func (oper *Operator) TaskSender() {
 	databases := make(map[string][]string)
+	db := oper.postgres.DB
+	rmqChannel := oper.rabbit.Channel
 	for {
 		for numEl, cache := range opCache {
 			queue, err := rmqChannel.QueueDeclare(
@@ -112,9 +113,11 @@ func TaskSender(db *sqlx.DB, rmqChannel *amqp.Channel) {
 	}
 }
 
-func Aggregator(db *sqlx.DB, refreshTimeScan int) {
+func (oper *Operator) Aggregator() {
 	var task = Task{}
 	var psqlUpdateTime *time.Timer
+	db := oper.postgres.DB
+	refreshTimeScan := oper.postgres.RefreshTimeScan
 	psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 	for {
 		select {
@@ -141,17 +144,17 @@ func Aggregator(db *sqlx.DB, refreshTimeScan int) {
 	}
 }
 
-func InitOperator(cfg config.ShkaffConfig) (o *Operator) {
-	o = &Operator{
+func InitOperator(cfg config.ShkaffConfig) (oper *Operator) {
+	oper = &Operator{
 		postgres: maindb.InitPSQL(cfg),
 		rabbit:   producer.InitAMQPProducer(cfg),
 	}
 	return
 }
 
-func (o *Operator) Run() {
+func (oper *Operator) Run() {
 	ch := make(chan bool)
-	go Aggregator(o.postgres.DB, o.postgres.RefreshTimeScan)
-	go TaskSender(o.postgres.DB, o.rabbit.Channel)
+	go oper.Aggregator()
+	go oper.TaskSender()
 	<-ch
 }
