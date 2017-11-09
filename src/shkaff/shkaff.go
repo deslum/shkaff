@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sync"
 	"shkaff/config"
 	"shkaff/operator"
 	"shkaff/worker"
@@ -29,14 +30,17 @@ func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 }
 
 func main() {
-	ch := make(chan bool)
+	var serviceCount int
+	shkaffWG := sync.WaitGroup{}
 	cfg := config.InitControlConfig()
 	servicesName := []string{"Operator", "Worker"}
 	service := new(shkaff)
 	for _, name := range servicesName {
 		var s Service
+		serviceCount++
+		shkaffWG.Add(serviceCount)
 		s = service.Init(name, cfg)
 		go s.Run()
 	}
-	<-ch
+	shkaffWG.Wait()
 }

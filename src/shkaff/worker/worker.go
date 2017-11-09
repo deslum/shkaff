@@ -8,8 +8,11 @@ import (
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
+	"sync"
 	"time"
 )
+
+var workerWG sync.WaitGroup = sync.WaitGroup{}
 
 type Worker struct {
 	postgres   *maindb.PSQL
@@ -36,6 +39,7 @@ type Task struct {
 
 func (w *Worker) StartWorker() {
 	var task Task
+	log.Println("Start Worker")
 	for message := range w.workRabbit.Msgs {
 		if err := json.Unmarshal(message.Body, &task); err != nil {
 			log.Println(err, "Failed JSON parse")
@@ -44,6 +48,7 @@ func (w *Worker) StartWorker() {
 		mg.Dump()
 		message.Ack(false)
 	}
+	workerWG.Done()
 }
 
 func InitWorker(cfg config.ShkaffConfig) (w *Worker) {
@@ -56,8 +61,7 @@ func InitWorker(cfg config.ShkaffConfig) (w *Worker) {
 }
 
 func (w *Worker) Run() {
-	ch := make(chan bool)
-	log.Println("Start Worker")
+	workerWG.Add(1)
 	go w.StartWorker()
-	<-ch
+	workerWG.Wait()
 }

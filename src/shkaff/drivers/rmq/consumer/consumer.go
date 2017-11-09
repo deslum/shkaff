@@ -33,10 +33,10 @@ func InitAMQPConsumer(cfg config.ShkaffConfig) (qp *RMQ) {
 func (qp *RMQ) initConnection() {
 	var err error
 	if qp.Connect, err = amqp.Dial(qp.uri); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	q, err := qp.Channel.QueueDeclare(
 		"mongodb", // name

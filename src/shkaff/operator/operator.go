@@ -8,6 +8,7 @@ import (
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/rmq/producer"
 	"time"
+	"sync"
 
 	"encoding/json"
 
@@ -16,6 +17,7 @@ import (
 
 var (
 	opCache []Task
+	operatorWG sync.WaitGroup = sync.WaitGroup{}
 )
 
 type Operator struct {
@@ -79,6 +81,7 @@ func (oper *Operator) TaskSender() {
 						}
 						if _, err = db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
 							log.Fatalln(err)
+							continue
 						}
 					}
 				}
@@ -129,9 +132,9 @@ func InitOperator(cfg config.ShkaffConfig) (oper *Operator) {
 }
 
 func (oper *Operator) Run() {
+	operatorWG.Add(1)
 	log.Println("Start Operator")
-	ch := make(chan bool)
 	go oper.Aggregator()
 	go oper.TaskSender()
-	<-ch
+	operatorWG.Wait()
 }

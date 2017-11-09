@@ -32,10 +32,10 @@ func InitAMQPProducer(cfg config.ShkaffConfig) (qp *RMQ) {
 func (qp *RMQ) initConnection() {
 	var err error
 	if qp.Connect, err = amqp.Dial(qp.uri); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	if _, err = qp.Channel.QueueDeclare(
 		qp.queueName, // name
