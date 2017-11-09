@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	URI_TEMPLATE = "amqp://%s:%s@%s:%d/%s"
+	uriTempalte = "amqp://%s:%s@%s:%d/%s"
 )
 
 type RMQ struct {
@@ -22,7 +22,7 @@ type RMQ struct {
 
 func InitAMQPProducer(cfg config.ShkaffConfig) (qp *RMQ) {
 	qp = new(RMQ)
-	qp.uri = fmt.Sprintf(URI_TEMPLATE, cfg.RMQ_USER,
+	qp.uri = fmt.Sprintf(uriTempalte, cfg.RMQ_USER,
 		cfg.RMQ_PASS,
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,

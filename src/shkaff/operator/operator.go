@@ -10,7 +10,7 @@ import (
 
 	"encoding/json"
 
-	_ "github.com/bmizerany/pq"
+	_ "github.com/lib/pq"
 )
 
 const (

@@ -9,5 +9,5 @@
 	"DATABASE_USER": "test",
 	"DATABASE_PASS": "test",
 	"DATABASE_DB": "shkaff",
-  "REFRESH_DATABASE_SCAN": 30
+        "REFRESH_DATABASE_SCAN": 30
 }
