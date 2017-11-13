@@ -15,6 +15,7 @@ import (
 var workerWG sync.WaitGroup = sync.WaitGroup{}
 
 type Worker struct {
+	cfg        config.ShkaffConfig
 	postgres   *maindb.PSQL
 	statRabbit *producer.RMQ
 	workRabbit *consumer.RMQ
@@ -60,8 +61,17 @@ func InitWorker(cfg config.ShkaffConfig) (w *Worker) {
 	return
 }
 
+func (w *Worker) runWorkers(queueName string, workersCount int) {
+	w.workRabbit.InitConnection(queueName)
+	for worker := 1; worker <= workersCount; worker++ {
+		workerWG.Add(1)
+		go w.StartWorker()
+		workerWG.Wait()
+	}
+}
+
 func (w *Worker) Run() {
-	workerWG.Add(1)
-	go w.StartWorker()
-	workerWG.Wait()
+	for database, workerCount := range w.cfg.WORKERS {
+		w.runWorkers(database, workerCount)
+	}
 }

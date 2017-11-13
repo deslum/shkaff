@@ -9,5 +9,9 @@
 	"DATABASE_USER": "test",
 	"DATABASE_PASS": "test",
 	"DATABASE_DB": "shkaff",
-        "REFRESH_DATABASE_SCAN": 10
+	"REFRESH_DATABASE_SCAN": 10,
+	"WORKERS":{
+		"mongodb":10,
+		"postgresql":0
+	}
 }

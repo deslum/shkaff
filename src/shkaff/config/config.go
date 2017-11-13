@@ -20,6 +20,7 @@ type ShkaffConfig struct {
 	DATABASE_DB           string `json:"DATABASE_DB"`
 	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
 	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
+	WORKERS               map[string]int
 }
 
 func InitControlConfig() (cc ShkaffConfig) {
@@ -73,6 +74,21 @@ func (cc *ShkaffConfig) validate() {
 	}
 	if cc.REFRESH_DATABASE_SCAN == 0 {
 		cc.REFRESH_DATABASE_SCAN = consts.DEFAULT_REFRESH_DATABASE_SCAN
+	}
+	for database, workersCount := range cc.WORKERS {
+		if workersCount > 0 {
+			switch database {
+			case "mongodb":
+				log.Printf("%s WorkersCount %d", database, workersCount)
+			case "postgresql":
+				log.Printf("%s WorkersCount %d", database, workersCount)
+			default:
+				log.Fatalf("Unknown Database %s", database)
+			}
+		} else {
+			log.Printf("%s WorkersCount %d", database, workersCount)
+			delete(cc.WORKERS, database)
+		}
 	}
 	return
 }

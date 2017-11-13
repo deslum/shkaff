@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"sync"
 	"shkaff/config"
 	"shkaff/operator"
 	"shkaff/worker"
+	"sync"
 )
 
 type Creater interface {

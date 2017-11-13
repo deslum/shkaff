@@ -11,7 +11,6 @@ import (
 
 type RMQ struct {
 	uri        string
-	queueName  string
 	Channel    *amqp.Channel
 	Connect    *amqp.Connection
 	Publishing *amqp.Publishing
@@ -25,13 +24,14 @@ func InitAMQPConsumer(cfg config.ShkaffConfig) (qp *RMQ) {
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,
 		cfg.RMQ_VHOST)
-	qp.queueName = "mongodb"
-	qp.initConnection()
 	return
 }
 
-func (qp *RMQ) initConnection() {
+func (qp *RMQ) InitConnection(queueName string) {
 	var err error
+	if queueName == "" {
+		log.Fatalln("Consumer queue name empty")
+	}
 	if qp.Connect, err = amqp.Dial(qp.uri); err != nil {
 		log.Fatalln(err)
 	}
@@ -39,7 +39,7 @@ func (qp *RMQ) initConnection() {
 		log.Fatalln(err)
 	}
 	q, err := qp.Channel.QueueDeclare(
-		"mongodb", // name
+		queueName, // name
 		true,      // durable
 		false,     // delete when unused
 		false,     // exclusive
