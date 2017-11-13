@@ -7,6 +7,7 @@ import (
 	"shkaff/consts"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/rmq/producer"
+	"shkaff/structs"
 	"time"
 	"sync"
 
@@ -16,7 +17,7 @@ import (
 )
 
 var (
-	opCache []Task
+	opCache []*structs.Task
 	operatorWG sync.WaitGroup = sync.WaitGroup{}
 )
 
@@ -25,24 +26,8 @@ type Operator struct {
 	rabbit   *producer.RMQ
 }
 
-type Task struct {
-	TaskID      int       `json:"task_id" db:"task_id"`
-	Databases   string    `json:"-" db:"databases"`
-	DBType      string    `json:"-" db:"db_type"`
-	Verb        int       `json:"verb" db:"verb"`
-	ThreadCount int       `json:"thread_count" db:"thread_count"`
-	Gzip        bool      `json:"gzip" db:"gzip"`
-	Ipv6        bool      `json:"ipv6" db:"ipv6"`
-	Host        string    `json:"host" db:"host"`
-	Port        int       `json:"port" db:"port"`
-	StartTime   time.Time `json:"start_time" db:"start_time"`
-	DBUser      string    `json:"db_user" db:"db_user"`
-	DBPassword  string    `json:"db_password" db:"db_password"`
-	Database    string    `json:"database"`
-	Sheet       string    `json:"sheet"`
-}
 
-func isDublicateTask(opc []Task, task Task) (result bool) {
+func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
 	for _, oc := range opc {
 		if oc.TaskID == task.TaskID {
 			return true
@@ -51,7 +36,7 @@ func isDublicateTask(opc []Task, task Task) (result bool) {
 	return false
 }
 
-func remove(slice []Task, s int) []Task {
+func remove(slice []*structs.Task, s int) []*structs.Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
@@ -93,7 +78,7 @@ func (oper *Operator) TaskSender() {
 }
 
 func (oper *Operator) Aggregator() {
-	var task = Task{}
+	var task = &structs.Task{}
 	var psqlUpdateTime *time.Timer
 	db := oper.postgres.DB
 	refreshTimeScan := oper.postgres.RefreshTimeScan

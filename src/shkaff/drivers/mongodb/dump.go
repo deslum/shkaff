@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net"
 	"os/exec"
 	"strings"
+	"shkaff/structs"
 )
 
 const (
@@ -34,28 +34,27 @@ type MongoParams struct {
 	parallelCollectionsNum int
 }
 
-func New(host string, port int, login, password string, ipv6 bool, database, collection string,
-	gzip bool, parallelCollectionsNum int) (mp MongoParams) {
+func New(task *structs.Task) (mp *MongoParams) {
 
-	if err := net.ParseIP(host); err == nil {
-		log.Fatalf("MongoDB Host %s invalid \n", host)
-	}
-	if port < 1024 || port > 65535 {
-		log.Fatalf("MongoDB Port %d invalid \n", port)
-	}
-	if (login == "" && password != "") || (login != "" && password == "") {
-		log.Fatalf("MongoDB bad authorization \n")
-	}
-	return MongoParams{
-		host:                   host,
-		port:                   port,
-		login:                  login,
-		password:               password,
-		ipv6:                   ipv6,
-		gzip:                   gzip,
-		database:               database,
-		collection:             collection,
-		parallelCollectionsNum: parallelCollectionsNum,
+	// if err := net.ParseIP(host); err == nil {
+	// 	log.Fatalf("MongoDB Host %s invalid \n", host)
+	// }
+	// if port < 1024 || port > 65535 {
+	// 	log.Fatalf("MongoDB Port %d invalid \n", port)
+	// }
+	// if (login == "" && password != "") || (login != "" && password == "") {
+	// 	log.Fatalf("MongoDB bad authorization \n")
+	// }
+	return &MongoParams{
+		host:                   task.Host,
+		port:                   task.Port,
+		login:                  task.DBUser,
+		password:               task.DBPassword,
+		ipv6:                   task.Ipv6,
+		gzip:                   task.Gzip,
+		database:               task.Database,
+		collection:             task.Sheet,
+		parallelCollectionsNum: task.ThreadCount,
 	}
 }
 
