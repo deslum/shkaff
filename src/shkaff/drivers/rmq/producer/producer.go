@@ -24,6 +24,7 @@ func InitAMQPProducer(cfg config.ShkaffConfig) (qp *RMQ) {
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,
 		cfg.RMQ_VHOST)
+	qp.queueName = "mongodb"
 	qp.initConnection()
 	return
 }

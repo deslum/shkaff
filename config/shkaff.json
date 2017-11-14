@@ -4,7 +4,7 @@
 	"RMQ_USER": "shkaff",
 	"RMQ_PASS": "shkaff",
 	"RMQ_VHOST": "shkaff_workers",
-	"DATABASE_HOST": "192.168.0.101",
+	"DATABASE_HOST": "localhost",
 	"DATABASE_PORT": 5432,
 	"DATABASE_USER": "test",
 	"DATABASE_PASS": "test",
