@@ -11,16 +11,16 @@ import (
 )
 
 const (
-	dumpCommand            = "mongodump"
-	hostKey                = "--host"
-	portKey                = "--port"
-	loginKey               = "--username"
-	passKey                = "--password"
-	ipv6Key                = "--ipv6"
-	databaseKey            = "--db"
-	collectionKey          = "--collection"
-	gzipKey                = "--gzip"
-	parallelCollectionsKey = "-j"
+	DUMP_COMMAND            = "mongodump"
+	HOST_KEY                = "--host"
+	PORT_KEY                = "--port"
+	LOGIN_KEY               = "--username"
+	PASS_KEY                = "--password"
+	IPV6_KEY                = "--ipv6"
+	DATABASE_KEY            = "--db"
+	COLLECTION_KEY          = "--collection"
+	GZIP_KEY                = "--gzip"
+	PARALLEL_KEY 			= "-j"
 )
 
 type MongoParams struct {
@@ -41,27 +41,27 @@ func (mp *MongoParams) isUseAuth() bool {
 
 func (mp *MongoParams) ParamsToString() (commandString string) {
 	var cmdLine []string
-	cmdLine = append(cmdLine, dumpCommand)
-	cmdLine = append(cmdLine, fmt.Sprintf("%s %s", hostKey, mp.host))
-	cmdLine = append(cmdLine, fmt.Sprintf("%s %d", portKey, mp.port))
+	cmdLine = append(cmdLine, DUMP_COMMAND)
+	cmdLine = append(cmdLine, fmt.Sprintf("%s %s", HOST_KEY, mp.host))
+	cmdLine = append(cmdLine, fmt.Sprintf("%s %d", PORT_KEY, mp.port))
 	if mp.isUseAuth() {
-		auth := fmt.Sprintf("%s %s %s %s", loginKey, mp.login, passKey, mp.password)
+		auth := fmt.Sprintf("%s %s %s %s", LOGIN_KEY, mp.login, PASS_KEY, mp.password)
 		cmdLine = append(cmdLine, auth)
 	}
 	if mp.ipv6 {
-		cmdLine = append(cmdLine, ipv6Key)
+		cmdLine = append(cmdLine, IPV6_KEY)
 	}
 	if mp.gzip {
-		cmdLine = append(cmdLine, gzipKey)
+		cmdLine = append(cmdLine, GZIP_KEY)
 	}
 	if mp.database != "" {
-		cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", databaseKey, mp.database))
+		cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", DATABASE_KEY, mp.database))
 		if mp.collection != "" {
-			cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", collectionKey, mp.collection))
+			cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", COLLECTION_KEY, mp.collection))
 		}
 	}
 	if mp.collection == "" && mp.parallelCollectionsNum > 4 {
-		cmdLine = append(cmdLine, fmt.Sprintf("%s=%d", parallelCollectionsKey, mp.parallelCollectionsNum))
+		cmdLine = append(cmdLine, fmt.Sprintf("%s=%d", PARALLEL_KEY, mp.parallelCollectionsNum))
 	}
 	commandString = strings.Join(cmdLine, " ")
 	return

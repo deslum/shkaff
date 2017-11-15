@@ -29,10 +29,9 @@ type worker struct {
 
 func (w *worker) StartWorker() {
 	var task *structs.Task
-	var err error
-	var dbDriver databases.DatabaseDriver
 	w.workRabbit.InitConnection(w.databaseName)
-	if dbDriver, err = w.getDatabaseType(); err != nil {
+	dbDriver, err := w.getDatabaseType(); 
+	if err != nil {
 		log.Println(err)
 		return
 	}
@@ -40,6 +39,7 @@ func (w *worker) StartWorker() {
 	for message := range w.workRabbit.Msgs {
 		if err := json.Unmarshal(message.Body, &task); err != nil {
 			log.Println(err, "Failed JSON parse")
+			return
 		}
 		dbDriver.Dump(task)
 		message.Ack(false)
