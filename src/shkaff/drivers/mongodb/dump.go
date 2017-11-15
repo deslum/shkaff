@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"shkaff/structs"
+	"shkaff/structs/databases"
 	"strings"
 )
 
@@ -66,27 +67,30 @@ func (mp *MongoParams) ParamsToString() (commandString string) {
 	return
 }
 
-func InitDriver(task *structs.Task) (mp *MongoParams) {
-	return &MongoParams{
-		host:                   task.Host,
-		port:                   task.Port,
-		login:                  task.DBUser,
-		password:               task.DBPassword,
-		ipv6:                   task.Ipv6,
-		gzip:                   task.Gzip,
-		database:               task.Database,
-		collection:             task.Sheet,
-		parallelCollectionsNum: task.ThreadCount,
-	}
+func InitDriver() (mp databases.DatabaseDriver) {
+	return &MongoParams{}
 }
 
-func (mp *MongoParams) Dump() {
+func (mp *MongoParams) setDBSettings(task *structs.Task) {
+	mp.host = task.Host
+	mp.port = task.Port
+	mp.login = task.DBUser
+	mp.password = task.DBPassword
+	mp.ipv6 = task.Ipv6
+	mp.gzip = task.Gzip
+	mp.database = task.Database
+	mp.collection = task.Sheet
+	mp.parallelCollectionsNum = task.ThreadCount
+}
+
+func (mp *MongoParams) Dump(task *structs.Task) {
 	var stderr bytes.Buffer
+	mp.setDBSettings(task)
 	cmd := exec.Command("sh", "-c", mp.ParamsToString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return
 	}
-	fmt.Println(stderr.String())
+	log.Println(stderr.String())
 }

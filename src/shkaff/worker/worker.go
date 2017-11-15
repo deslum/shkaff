@@ -2,12 +2,14 @@ package worker
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"shkaff/config"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
+	"shkaff/structs"
 	"shkaff/structs/databases"
 	"sync"
 )
@@ -23,23 +25,36 @@ type worker struct {
 	postgres     *maindb.PSQL
 	statRabbit   *producer.RMQ
 	workRabbit   *consumer.RMQ
-	database     *databases.Driver
 }
 
 func (w *worker) StartWorker() {
 	var task *structs.Task
-	var backup *mongodb.MongoParams
+	var err error
+	var dbDriver databases.DatabaseDriver
 	w.workRabbit.InitConnection(w.databaseName)
-	backup = w.database.Init(task)
+	if dbDriver, err = w.getDatabaseType(); err != nil {
+		log.Println(err)
+		return
+	}
 	log.Printf("Start Worker for %s\n", w.databaseName)
 	for message := range w.workRabbit.Msgs {
 		if err := json.Unmarshal(message.Body, &task); err != nil {
 			log.Println(err, "Failed JSON parse")
 		}
-		backup.Dump()
+		dbDriver.Dump(task)
 		message.Ack(false)
 	}
 	workerWG.Done()
+}
+
+func (w *worker) getDatabaseType() (dbDriver databases.DatabaseDriver, err error) {
+	switch w.databaseName {
+	case "mongodb":
+		dbDriver = mongodb.InitDriver()
+		return dbDriver, nil
+	default:
+		return nil, errors.New("Driver not found")
+	}
 }
 
 func InitWorker(cfg config.ShkaffConfig) (ws *WorkersStarter) {
@@ -51,7 +66,6 @@ func InitWorker(cfg config.ShkaffConfig) (ws *WorkersStarter) {
 				postgres:     maindb.InitPSQL(cfg),
 				statRabbit:   producer.InitAMQPProducer(cfg),
 				workRabbit:   consumer.InitAMQPConsumer(cfg),
-				database:     new(structs.Driver),
 			}
 			ws.workers = append(ws.workers, worker)
 		}
