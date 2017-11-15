@@ -2,14 +2,13 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"shkaff/config"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
-	"shkaff/structs"
+	"shkaff/structs/databases"
 	"sync"
 )
 
@@ -24,26 +23,18 @@ type worker struct {
 	postgres     *maindb.PSQL
 	statRabbit   *producer.RMQ
 	workRabbit   *consumer.RMQ
+	database     *databases.Driver
 }
 
 func (w *worker) StartWorker() {
 	var task *structs.Task
 	var backup *mongodb.MongoParams
 	w.workRabbit.InitConnection(w.databaseName)
+	backup = w.database.Init(task)
 	log.Printf("Start Worker for %s\n", w.databaseName)
-
 	for message := range w.workRabbit.Msgs {
 		if err := json.Unmarshal(message.Body, &task); err != nil {
 			log.Println(err, "Failed JSON parse")
-		}
-		//TODO Refactoring with patterns and functions
-		switch w.databaseName {
-		case "mongodb":
-			backup = mongodb.New(task)
-		default:
-			fmt.Println("Bullshit happens")
-			workerWG.Done()
-			return
 		}
 		backup.Dump()
 		message.Ack(false)
@@ -60,6 +51,7 @@ func InitWorker(cfg config.ShkaffConfig) (ws *WorkersStarter) {
 				postgres:     maindb.InitPSQL(cfg),
 				statRabbit:   producer.InitAMQPProducer(cfg),
 				workRabbit:   consumer.InitAMQPConsumer(cfg),
+				database:     new(structs.Driver),
 			}
 			ws.workers = append(ws.workers, worker)
 		}
