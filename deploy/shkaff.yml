@@ -1,39 +1,52 @@
-PostgreSQL:
-  restart: always
-  image: postgres:latest
-  ports:
-    - "5432:5432"
-  environment:
-    - DEBUG=true
-    - POSTGRES_PASSWORD=test
-    - POSTGRES_USER=test
-    - POSTGRES_DB=shkaff
-  volumes:
-    - ./maindb/shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
+version: "2"
 
-MongoDB:
-  restart: always
-  image: mongo:latest
-  environment:
-    - MONGODB_USER=test
-    - MONGODB_DATABASE=test
-    - MONGODB_PASS=test
-  ports:
-    - "27017:27017"
-  volumes:
-    - /srv/docker/mongodb:/var/lib/mongodb
-  command:
-    - --storageEngine=wiredTiger
-
-RabbitMQ:
+services:
+  PostgreSQL:
     restart: always
-    image: "rabbitmq:latest"
-    environment:
-      - RABBITMQ_DEFAULT_USER=shkaff
-      - RABBITMQ_DEFAULT_PASS=shkaff
-      - RABBITMQ_DEFAULT_VHOST=shkaff_workers
+    image: postgres:latest
     ports:
-      - "15672:15672"
-      - "5672:5672"
-    volumes:    
-      - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"
+      - "5432:5432"
+    environment:
+      - DEBUG=true
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+      - POSTGRES_DB=shkaff
+    volumes:
+      - ./maindb/shkaff.sql:/docker-entrypoint-initdb.d/shkaff.sql
+
+  MongoDB:
+    restart: always
+    image: mongo:latest
+    environment:
+      - MONGODB_USER=test
+      - MONGODB_DATABASE=test
+      - MONGODB_PASS=test
+    ports:
+      - "27017:27017"
+    volumes:
+      - /srv/docker/mongodb:/var/lib/mongodb
+    command:
+      - --storageEngine=wiredTiger
+
+  RabbitMQ:
+      restart: always
+      image: "rabbitmq:latest"
+      environment:
+        - RABBITMQ_DEFAULT_USER=shkaff
+        - RABBITMQ_DEFAULT_PASS=shkaff
+        - RABBITMQ_DEFAULT_VHOST=shkaff_workers
+      ports:
+        - "15672:15672"
+        - "5672:5672"
+      volumes:    
+        - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"
+
+  ClickHouse:
+    restart: always
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+      - "9009:9009"
+
+
