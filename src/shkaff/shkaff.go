@@ -5,11 +5,11 @@ import (
 	"shkaff/config"
 	"shkaff/operator"
 	"shkaff/worker"
-	"github.com/sevlyar/go-daemon"
-	"sync"
+	"github.com/takama/daemon"
+	"os/signal"
 	"os"
+	"sync"
 	"syscall"
-	"flag"
 )
 
 type Creater interface {
@@ -18,6 +18,15 @@ type Creater interface {
 type Service interface {
 	Run()
 }
+
+type serv struct{
+	daemon.Daemon
+}
+
+var (
+	dependencies = []string{"shkaff.service"}
+	shkaffWG = sync.RWMutex{}
+)
 
 type shkaff struct{}
 
@@ -33,84 +42,56 @@ func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 	return
 }
 
-var (
-	signal = flag.String("s", "", `send signal to the daemon
-		quit — graceful shutdown
-		stop — fast shutdown`)
-	stop = make(chan struct{})
-	done = make(chan struct{})
-)
 
-func termHandler(sig os.Signal) error {
-	log.Println("terminating...")
-	stop <- struct{}{}
-	if sig == syscall.SIGQUIT {
-		<-done
+func (service *serv) start()(string, error){
+	usage := "Usage: shkaff install | remove | start | stop | status"
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+		switch command {
+		case "install":
+			return service.Install()
+		case "remove":
+			return service.Remove()
+		case "start":
+			return service.Start()
+		case "stop":
+			return service.Stop()
+		case "status":
+			return service.Status()
+		default:
+			return usage, nil
+		}
 	}
-	return daemon.ErrStop
-}
-
-func reloadHandler(sig os.Signal) error {
-	log.Println("configuration reloaded")
-	return nil
-}
-
-func start(){
+	interrupt := make(chan os.Signal, 1)
+    signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 	var serviceCount int
 	shkaffWG := sync.WaitGroup{}
 	cfg := config.InitControlConfig()
 	servicesName := []string{"Operator", "Worker"}
-	service := new(shkaff)
+	shkf := new(shkaff)
 	for _, name := range servicesName {
 		var s Service
 		serviceCount++
 		shkaffWG.Add(serviceCount)
-		s = service.Init(name, cfg)
+		s = shkf.Init(name, cfg)
 		go s.Run()
 	}
-	shkaffWG.Wait()
+	killSignal := <-interrupt
+	log.Println("Got signal:", killSignal)
+	return "Service exited", nil
 }
 
 func main() {
-	flag.Parse()
-	daemon.AddCommand(daemon.StringFlag(signal, "quit"), syscall.SIGQUIT, termHandler)
-	daemon.AddCommand(daemon.StringFlag(signal, "stop"), syscall.SIGTERM, termHandler)
-	daemon.AddCommand(daemon.StringFlag(signal, "reload"), syscall.SIGHUP, reloadHandler)
-	if err := os.MkdirAll("./logs", 0644); err!=nil{
-		log.Fatalln(err)
-	}
-	cntxt := &daemon.Context{
-		PidFileName: "/tmp/shkaff.pid",
-		PidFilePerm: 0644,
-		LogFileName: "./logs/shkaff.log",
-		LogFilePerm: 0640,
-		WorkDir:     "./",
-		Umask:       027,
-	}
-
-	if len(daemon.ActiveFlags()) > 0 {
-		d, err := cntxt.Search()
-		if err != nil {
-			log.Fatalln("Unable send signal to the daemon:", err)
-		}
-		daemon.SendCommands(d)
-		return
-	}
-
-	d, err := cntxt.Reborn()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if d != nil {
-		return
-	}
-	defer cntxt.Release()
-	log.Println("Shkaff daemon started")
-	go start()
-	err = daemon.ServeSignals()
-	if err != nil {
-		log.Println("Error:", err)
-	}
-	log.Println("Shkaff daemon terminated")
-	
+	srv, err := daemon.New("shkaff", "Backup database system", dependencies...)
+    if err != nil {
+        log.Println("Error: ", err)
+        os.Exit(1)
+    }
+    service := &serv{srv}
+    status, err := service.start()
+    if err != nil {
+        log.Println(status, "\nError: ", err)
+        os.Exit(1)
+    }
+    log.Println(status, err)
 }
