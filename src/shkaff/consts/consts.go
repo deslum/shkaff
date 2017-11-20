@@ -1,7 +1,7 @@
 package consts
 
 const (
-	CONFIG_FILE                   = "config/shkaff.json"
+	CONFIG_FILE                   = "../config/shkaff.json"
 	DEFAULT_HOST                  = "localhost"
 	DEFAULT_DATABASE_PORT         = 5432
 	DEFAULT_AMQP_PORT             = 5672
