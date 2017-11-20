@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"shkaff/config"
+	"shkaff/drivers/cache"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
@@ -16,12 +17,13 @@ import (
 
 var workerWG sync.WaitGroup = sync.WaitGroup{}
 
-type WorkersStarter struct {
+type workersStarter struct {
 	workers []*worker
 }
 
 type worker struct {
 	databaseName string
+	cacheDB      *cache.Cache
 	postgres     *maindb.PSQL
 	statRabbit   *producer.RMQ
 	workRabbit   *consumer.RMQ
@@ -30,7 +32,7 @@ type worker struct {
 func (w *worker) StartWorker() {
 	var task *structs.Task
 	w.workRabbit.InitConnection(w.databaseName)
-	dbDriver, err := w.getDatabaseType(); 
+	dbDriver, err := w.getDatabaseType()
 	if err != nil {
 		log.Println(err)
 		return
@@ -57,12 +59,13 @@ func (w *worker) getDatabaseType() (dbDriver databases.DatabaseDriver, err error
 	}
 }
 
-func InitWorker(cfg config.ShkaffConfig) (ws *WorkersStarter) {
-	ws = new(WorkersStarter)
+func InitWorker(cfg config.ShkaffConfig) (ws *workersStarter) {
+	ws = new(workersStarter)
 	for database, workerCount := range cfg.WORKERS {
 		for count := 0; count < workerCount; count++ {
 			worker := &worker{
 				databaseName: database,
+				cacheDB:      cache.InitCacheDB(),
 				postgres:     maindb.InitPSQL(cfg),
 				statRabbit:   producer.InitAMQPProducer(cfg),
 				workRabbit:   consumer.InitAMQPConsumer(cfg),
@@ -73,7 +76,7 @@ func InitWorker(cfg config.ShkaffConfig) (ws *WorkersStarter) {
 	return
 }
 
-func (ws *WorkersStarter) Run() {
+func (ws *workersStarter) Run() {
 	for _, w := range ws.workers {
 		workerWG.Add(1)
 		go w.StartWorker()
