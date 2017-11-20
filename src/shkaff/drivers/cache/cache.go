@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"errors1"
+	"errors"
 	"strings"
 	"fmt"
 	"log"
