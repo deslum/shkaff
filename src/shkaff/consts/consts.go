@@ -24,4 +24,6 @@ const (
 
 	REQUEST_GET_STARTTIME = "SELECT task_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password,tp.\"type\" as db_type FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id INNER JOIN shkaff.types tp ON tp.type_id = db.\"type\" WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
+
+	CACHEPATH = "./cache/cache.db"
 )

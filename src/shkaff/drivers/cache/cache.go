@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"shkaff/consts"
 	"strings"
 
 	"github.com/syndtr/goleveldb/leveldb"
-)
-
-const (
-	CACHEPATH = "./cache/cache.db"
 )
 
 type Cache struct {
@@ -19,12 +16,12 @@ type Cache struct {
 }
 
 func InitCacheDB() (cache *Cache) {
-	err := os.MkdirAll(CACHEPATH, 0644)
+	err := os.MkdirAll(consts.CACHEPATH, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	cache = new(Cache)
-	cache.DB, err = leveldb.OpenFile(CACHEPATH, nil)
+	cache.DB, err = leveldb.OpenFile(consts.CACHEPATH, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,7 +70,11 @@ func (cache *Cache) DeleteKV(userID, campID int) (err error) {
 
 func (cache *Cache) ExistKV(userID, campID int) (result bool, err error) {
 	key := []byte(fmt.Sprintf("%d|%d", userID, campID))
-	if res, err := cache.Get(key, nil); res == nil && err != nil {
+	res, err := cache.Get(key, nil)
+	if err != nil {
+		return false, err
+	}
+	if res == nil {
 		return false, err
 	}
 	return true, nil
