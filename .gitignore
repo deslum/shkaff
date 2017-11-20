@@ -10,6 +10,7 @@ bin/
 deploy/leveldb/leveldb/
 src/github.com/
 src/golang.org/
+deploy/leveldb/leveldb/
 
 # Thumbnails
 ._*
