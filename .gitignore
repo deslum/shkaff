@@ -9,6 +9,7 @@ pkg/
 bin/
 src/github.com/
 src/golang.org/
+deploy/leveldb/leveldb/
 
 # Thumbnails
 ._*
