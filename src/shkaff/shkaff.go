@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/takama/daemon"
 	"log"
+	"os"
+	"os/signal"
 	"shkaff/config"
 	"shkaff/operator"
 	"shkaff/worker"
-	"github.com/takama/daemon"
-	"os/signal"
-	"os"
 	"sync"
 	"syscall"
 )
@@ -19,13 +19,13 @@ type Service interface {
 	Run()
 }
 
-type serv struct{
+type serv struct {
 	daemon.Daemon
 }
 
 var (
 	dependencies = []string{"shkaff.service"}
-	shkaffWG = sync.RWMutex{}
+	shkaffWG     = sync.RWMutex{}
 )
 
 type shkaff struct{}
@@ -42,8 +42,7 @@ func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
 	return
 }
 
-
-func (service *serv) start()(string, error){
+func (service *serv) start() (string, error) {
 	usage := "Usage: shkaff install | remove | start | stop | status"
 	if len(os.Args) > 1 {
 		command := os.Args[1]
@@ -63,7 +62,7 @@ func (service *serv) start()(string, error){
 		}
 	}
 	interrupt := make(chan os.Signal, 1)
-    signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
+	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 	var serviceCount int
 	shkaffWG := sync.WaitGroup{}
 	cfg := config.InitControlConfig()
@@ -83,15 +82,15 @@ func (service *serv) start()(string, error){
 
 func main() {
 	srv, err := daemon.New("shkaff", "Backup database system", dependencies...)
-    if err != nil {
-        log.Println("Error: ", err)
-        os.Exit(1)
-    }
-    service := &serv{srv}
-    status, err := service.start()
-    if err != nil {
-        log.Println(status, "\nError: ", err)
-        os.Exit(1)
-    }
-    log.Println(status, err)
+	if err != nil {
+		log.Println("Error: ", err)
+		os.Exit(1)
+	}
+	service := &serv{srv}
+	status, err := service.start()
+	if err != nil {
+		log.Println(status, "\nError: ", err)
+		os.Exit(1)
+	}
+	log.Println(status, err)
 }

@@ -11,16 +11,16 @@ import (
 )
 
 const (
-	DUMP_COMMAND            = "mongodump"
-	HOST_KEY                = "--host"
-	PORT_KEY                = "--port"
-	LOGIN_KEY               = "--username"
-	PASS_KEY                = "--password"
-	IPV6_KEY                = "--ipv6"
-	DATABASE_KEY            = "--db"
-	COLLECTION_KEY          = "--collection"
-	GZIP_KEY                = "--gzip"
-	PARALLEL_KEY 			= "-j"
+	DUMP_COMMAND   = "mongodump"
+	HOST_KEY       = "--host"
+	PORT_KEY       = "--port"
+	LOGIN_KEY      = "--username"
+	PASS_KEY       = "--password"
+	IPV6_KEY       = "--ipv6"
+	DATABASE_KEY   = "--db"
+	COLLECTION_KEY = "--collection"
+	GZIP_KEY       = "--gzip"
+	PARALLEL_KEY   = "-j"
 )
 
 type MongoParams struct {
