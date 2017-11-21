@@ -4,6 +4,22 @@ import (
 	"time"
 )
 
+type Action int
+
+// 0 - NewDumping
+// 1 - StartDumping
+// 2 - SuccessDumping
+// 3 - FailDumping
+// 4 - RetryDumping
+
+const (
+	New Action = 0 + iota
+	Start
+	Success
+	Fail
+	Retry
+)
+
 type Task struct {
 	TaskID      int       `json:"task_id" db:"task_id"`
 	DBID        int       `json:"db_id" db:"db_id"`
@@ -21,4 +37,12 @@ type Task struct {
 	DBPassword  string    `json:"db_password" db:"db_password"`
 	Database    string    `json:"database"`
 	Sheet       string    `json:"sheet"`
+}
+
+type StatMessage struct {
+	TaskID int    `json:"task_id"`
+	DBID   int    `json:"db_id"`
+	UserID int    `json:"user_id"`
+	Act    Action `json:"action"`
+	Error  error  `json:"error"`
 }

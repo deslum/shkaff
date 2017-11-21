@@ -5,6 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"shkaff/consts"
+	"sync"
+)
+
+var (
+	cc          *ShkaffConfig
+	mutexConfig sync.Mutex
 )
 
 type ShkaffConfig struct {
@@ -23,19 +29,25 @@ type ShkaffConfig struct {
 	WORKERS               map[string]int
 }
 
-func InitControlConfig() (cc ShkaffConfig) {
+func InitControlConfig() *ShkaffConfig {
+	mutexConfig.Lock()
+	defer mutexConfig.Unlock()
+	if cc != nil {
+		return cc
+	}
+	cc = &ShkaffConfig{}
 	var file []byte
 	var err error
 	if file, err = ioutil.ReadFile(consts.CONFIG_FILE); err != nil {
 		log.Fatalln(err)
-		return
+		return nil
 	}
 	if err := json.Unmarshal(file, &cc); err != nil {
 		log.Fatalln(err)
-		return
+		return nil
 	}
 	cc.validate()
-	return
+	return cc
 }
 
 func (cc *ShkaffConfig) validate() {

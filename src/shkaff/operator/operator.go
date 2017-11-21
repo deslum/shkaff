@@ -3,7 +3,6 @@ package operator
 import (
 	"fmt"
 	"log"
-	"shkaff/config"
 	"shkaff/consts"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/rmq/producer"
@@ -107,16 +106,16 @@ func (oper *Operator) Aggregator() {
 	}
 }
 
-func InitOperator(cfg config.ShkaffConfig) (oper *Operator) {
+func InitOperator() (oper *Operator) {
 	oper = &Operator{
-		postgres: maindb.InitPSQL(cfg),
-		rabbit:   producer.InitAMQPProducer(cfg),
+		postgres: maindb.InitPSQL(),
+		rabbit:   producer.InitAMQPProducer("mongodb"),
 	}
 	return
 }
 
 func (oper *Operator) Run() {
-	operatorWG.Add(1)
+	operatorWG.Add(2)
 	log.Println("Start Operator")
 	go oper.Aggregator()
 	go oper.TaskSender()

@@ -17,14 +17,15 @@ type RMQ struct {
 	Publishing *amqp.Publishing
 }
 
-func InitAMQPProducer(cfg config.ShkaffConfig) (qp *RMQ) {
+func InitAMQPProducer(queueName string) (qp *RMQ) {
+	cfg := config.InitControlConfig()
 	qp = new(RMQ)
 	qp.uri = fmt.Sprintf(consts.RMQ_URI_TEMPLATE, cfg.RMQ_USER,
 		cfg.RMQ_PASS,
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,
 		cfg.RMQ_VHOST)
-	qp.queueName = "mongodb"
+	qp.queueName = queueName
 	qp.initConnection()
 	return
 }

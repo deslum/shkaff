@@ -31,12 +31,12 @@ var (
 
 type shkaff struct{}
 
-func (self *shkaff) Init(action string, cfg config.ShkaffConfig) (srv Service) {
+func (self *shkaff) Init(action string) (srv Service) {
 	switch action {
 	case "Operator":
-		srv = operator.InitOperator(cfg)
+		srv = operator.InitOperator()
 	case "Worker":
-		srv = worker.InitWorker(cfg)
+		srv = worker.InitWorker()
 	default:
 		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
@@ -66,14 +66,13 @@ func (service *serv) start() (string, error) {
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 	var serviceCount int
 	shkaffWG := sync.WaitGroup{}
-	cfg := config.InitControlConfig()
 	servicesName := []string{"Operator", "Worker"}
 	shkf := new(shkaff)
 	for _, name := range servicesName {
 		var s Service
 		serviceCount++
 		shkaffWG.Add(serviceCount)
-		s = shkf.Init(name, cfg)
+		s = shkf.Init(name)
 		go s.Run()
 	}
 	killSignal := <-interrupt

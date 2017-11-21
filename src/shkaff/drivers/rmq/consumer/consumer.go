@@ -17,7 +17,8 @@ type RMQ struct {
 	Msgs       <-chan amqp.Delivery
 }
 
-func InitAMQPConsumer(cfg config.ShkaffConfig) (qp *RMQ) {
+func InitAMQPConsumer() (qp *RMQ) {
+	cfg := config.InitControlConfig()
 	qp = new(RMQ)
 	qp.uri = fmt.Sprintf(consts.RMQ_URI_TEMPLATE, cfg.RMQ_USER,
 		cfg.RMQ_PASS,

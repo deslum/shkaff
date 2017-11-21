@@ -15,8 +15,9 @@ type PSQL struct {
 	RefreshTimeScan int
 }
 
-func InitPSQL(cfg config.ShkaffConfig) (ps *PSQL) {
+func InitPSQL() (ps *PSQL) {
 	var err error
+	cfg := config.InitControlConfig()
 	ps = new(PSQL)
 	ps.uri = fmt.Sprintf(consts.PSQL_URI_TEMPLATE, cfg.DATABASE_USER,
 		cfg.DATABASE_PASS,
