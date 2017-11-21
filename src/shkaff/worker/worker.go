@@ -97,7 +97,7 @@ func (w *worker) worker() {
 		dbDriver.Dump(task)
 		err = message.Ack(false)
 		if err != nil {
-			w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, err)
+			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			log.Println("Worker", "Fail Ack message", err)
 			continue
 		}
