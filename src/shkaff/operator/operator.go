@@ -20,9 +20,25 @@ var (
 	operatorWG sync.WaitGroup = sync.WaitGroup{}
 )
 
-type Operator struct {
+type operator struct {
 	postgres *maindb.PSQL
 	rabbit   *producer.RMQ
+}
+
+func InitOperator() (oper *operator) {
+	oper = &operator{
+		postgres: maindb.InitPSQL(),
+		rabbit:   producer.InitAMQPProducer("mongodb"),
+	}
+	return
+}
+
+func (oper *operator) Run() {
+	operatorWG.Add(2)
+	log.Println("Start Operator")
+	go oper.aggregator()
+	go oper.taskSender()
+	operatorWG.Wait()
 }
 
 func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
@@ -38,7 +54,7 @@ func remove(slice []*structs.Task, s int) []*structs.Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func (oper *Operator) TaskSender() {
+func (oper *operator) taskSender() {
 	databases := make(map[string][]string)
 	db := oper.postgres.DB
 	rabbit := oper.rabbit
@@ -75,7 +91,7 @@ func (oper *Operator) TaskSender() {
 	}
 }
 
-func (oper *Operator) Aggregator() {
+func (oper *operator) aggregator() {
 	var task = &structs.Task{}
 	var psqlUpdateTime *time.Timer
 	db := oper.postgres.DB
@@ -104,20 +120,4 @@ func (oper *Operator) Aggregator() {
 			psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 		}
 	}
-}
-
-func InitOperator() (oper *Operator) {
-	oper = &Operator{
-		postgres: maindb.InitPSQL(),
-		rabbit:   producer.InitAMQPProducer("mongodb"),
-	}
-	return
-}
-
-func (oper *Operator) Run() {
-	operatorWG.Add(2)
-	log.Println("Start Operator")
-	go oper.Aggregator()
-	go oper.TaskSender()
-	operatorWG.Wait()
 }
