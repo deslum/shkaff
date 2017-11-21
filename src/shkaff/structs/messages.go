@@ -1,11 +1,13 @@
 package structs
 
-import(
+import (
 	"time"
 )
 
 type Task struct {
 	TaskID      int       `json:"task_id" db:"task_id"`
+	DBID        int       `json:"db_id" db:"db_id"`
+	UserID      int       `json:"user_id" db:"user_id"`
 	Databases   string    `json:"-" db:"databases"`
 	DBType      string    `json:"-" db:"db_type"`
 	Verb        int       `json:"verb" db:"verb"`

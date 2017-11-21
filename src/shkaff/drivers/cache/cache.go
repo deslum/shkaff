@@ -30,8 +30,8 @@ func InitCacheDB() (cache *Cache) {
 
 }
 
-func (cache *Cache) SetKV(userID, campID int, table, sheet string) (err error) {
-	key := []byte(fmt.Sprintf("%d|%d", userID, campID))
+func (cache *Cache) SetKV(userID, dbID, taskID int, table, sheet string) (err error) {
+	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
 	value := []byte(fmt.Sprintf("%s|%s", table, sheet))
 	err = cache.DB.Put(key, value, nil)
 	if err != nil {
@@ -40,9 +40,9 @@ func (cache *Cache) SetKV(userID, campID int, table, sheet string) (err error) {
 	return
 }
 
-func (cache *Cache) GetKV(userID, campID int) (table, sheet string, err error) {
+func (cache *Cache) GetKV(userID, dbID, taskID int) (table, sheet string, err error) {
 	var value []byte
-	key := []byte(fmt.Sprintf("%d|%d", userID, campID))
+	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
 	value, err = cache.DB.Get(key, nil)
 	if err != nil {
 		return "", "", err
@@ -59,8 +59,8 @@ func (cache *Cache) GetKV(userID, campID int) (table, sheet string, err error) {
 	return table, sheet, nil
 }
 
-func (cache *Cache) DeleteKV(userID, campID int) (err error) {
-	key := []byte(fmt.Sprintf("%d|%d", userID, campID))
+func (cache *Cache) DeleteKV(userID, dbID, taskID int) (err error) {
+	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
 	err = cache.DB.Delete(key, nil)
 	if err != nil {
 		return err
@@ -68,8 +68,8 @@ func (cache *Cache) DeleteKV(userID, campID int) (err error) {
 	return
 }
 
-func (cache *Cache) ExistKV(userID, campID int) (result bool, err error) {
-	key := []byte(fmt.Sprintf("%d|%d", userID, campID))
+func (cache *Cache) ExistKV(userID, dbID, taskID int) (result bool, err error) {
+	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
 	res, err := cache.Get(key, nil)
 	if err != nil {
 		return false, err

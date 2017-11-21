@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/takama/daemon"
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +9,8 @@ import (
 	"shkaff/worker"
 	"sync"
 	"syscall"
+
+	"github.com/takama/daemon"
 )
 
 type Creater interface {
@@ -48,7 +49,7 @@ func (service *serv) start() (string, error) {
 		command := os.Args[1]
 		switch command {
 		case "install":
-			return service.Install("./config/shkaff.json")
+			return service.Install()
 		case "remove":
 			return service.Remove()
 		case "start":

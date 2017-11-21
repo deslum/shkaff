@@ -3,6 +3,7 @@ package worker
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"shkaff/config"
 	"shkaff/drivers/cache"
@@ -55,7 +56,8 @@ func (w *worker) getDatabaseType() (dbDriver databases.DatabaseDriver, err error
 		dbDriver = mongodb.InitDriver()
 		return dbDriver, nil
 	default:
-		return nil, errors.New("Driver not found")
+		answer := fmt.Sprintf("Driver %s not found", w.databaseName)
+		return nil, errors.New(answer)
 	}
 }
 

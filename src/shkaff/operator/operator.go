@@ -8,8 +8,8 @@ import (
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/rmq/producer"
 	"shkaff/structs"
-	"time"
 	"sync"
+	"time"
 
 	"encoding/json"
 
@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	opCache []*structs.Task
+	opCache    []*structs.Task
 	operatorWG sync.WaitGroup = sync.WaitGroup{}
 )
 
@@ -25,7 +25,6 @@ type Operator struct {
 	postgres *maindb.PSQL
 	rabbit   *producer.RMQ
 }
-
 
 func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
 	for _, oc := range opc {
