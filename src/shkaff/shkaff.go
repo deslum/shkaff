@@ -24,11 +24,6 @@ type serv struct {
 	daemon.Daemon
 }
 
-var (
-	dependencies = []string{"shkaff.service"}
-	shkaffWG     = sync.RWMutex{}
-)
-
 type shkaff struct{}
 
 func (self *shkaff) Init(action string) (srv Service) {
@@ -64,15 +59,12 @@ func (service *serv) start() (string, error) {
 	}
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
-	var serviceCount int
 	shkaffWG := sync.WaitGroup{}
 	servicesName := []string{"Operator", "Worker"}
 	shkf := new(shkaff)
+	shkaffWG.Add(len(servicesName))
 	for _, name := range servicesName {
-		var s Service
-		serviceCount++
-		shkaffWG.Add(serviceCount)
-		s = shkf.Init(name)
+		s := shkf.Init(name)
 		go s.Run()
 	}
 	killSignal := <-interrupt
@@ -81,6 +73,7 @@ func (service *serv) start() (string, error) {
 }
 
 func main() {
+	dependencies := []string{"shkaff.service"}
 	srv, err := daemon.New("shkaff", "Backup database system", dependencies...)
 	if err != nil {
 		log.Println("Error: ", err)

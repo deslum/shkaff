@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"shkaff/consts"
@@ -10,19 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"encoding/json"
-
 	_ "github.com/lib/pq"
 )
 
-var (
-	opCache    []*structs.Task
-	operatorWG sync.WaitGroup = sync.WaitGroup{}
-)
-
 type operator struct {
-	postgres *maindb.PSQL
-	rabbit   *producer.RMQ
+	opCache    []*structs.Task
+	operatorWG sync.WaitGroup
+	postgres   *maindb.PSQL
+	rabbit     *producer.RMQ
 }
 
 func InitOperator() (oper *operator) {
@@ -34,11 +30,12 @@ func InitOperator() (oper *operator) {
 }
 
 func (oper *operator) Run() {
-	operatorWG.Add(2)
+	oper.operatorWG = sync.WaitGroup{}
+	oper.operatorWG.Add(2)
 	log.Println("Start Operator")
 	go oper.aggregator()
 	go oper.taskSender()
-	operatorWG.Wait()
+	oper.operatorWG.Wait()
 }
 
 func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
@@ -59,7 +56,7 @@ func (oper *operator) taskSender() {
 	db := oper.postgres.DB
 	rabbit := oper.rabbit
 	for {
-		for numEl, cache := range opCache {
+		for numEl, cache := range oper.opCache {
 			if time.Now().Unix() > cache.StartTime.Unix() {
 				if err := json.Unmarshal([]byte(cache.Databases), &databases); err != nil {
 					log.Println("Unmarshal databases", err)
@@ -85,7 +82,7 @@ func (oper *operator) taskSender() {
 					}
 				}
 			}
-			opCache = remove(opCache, numEl)
+			oper.opCache = remove(oper.opCache, numEl)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -113,8 +110,8 @@ func (oper *operator) aggregator() {
 					psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 					continue
 				}
-				if !isDublicateTask(opCache, task) {
-					opCache = append(opCache, task)
+				if !isDublicateTask(oper.opCache, task) {
+					oper.opCache = append(oper.opCache, task)
 				}
 			}
 			psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
