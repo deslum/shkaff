@@ -5,7 +5,10 @@ import (
 	"io/ioutil"
 	"log"
 	"shkaff/consts"
+	"shkaff/logger"
 	"sync"
+
+	logging "github.com/op/go-logging"
 )
 
 var (
@@ -27,6 +30,7 @@ type ShkaffConfig struct {
 	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
 	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
 	WORKERS               map[string]int
+	log                   *logging.Logger
 }
 
 func InitControlConfig() *ShkaffConfig {
@@ -46,7 +50,8 @@ func InitControlConfig() *ShkaffConfig {
 		log.Fatalln(err)
 		return nil
 	}
-	cc.validate()
+	cc.log = logger.InitLogger("config")
+		cc.validate()
 	return cc
 }
 
@@ -91,14 +96,14 @@ func (cc *ShkaffConfig) validate() {
 		if workersCount > 0 {
 			switch database {
 			case "mongodb":
-				log.Printf("%s WorkersCount %d", database, workersCount)
+				cc.log.Infof("%s WorkersCount %d", database, workersCount)
 			case "postgresql":
-				log.Printf("%s WorkersCount %d", database, workersCount)
+				cc.log.Infof("%s WorkersCount %d", database, workersCount)
 			default:
-				log.Fatalf("Unknown Database %s", database)
+				cc.log.Fatalf("Unknown Database %s", database)
 			}
 		} else {
-			log.Printf("%s WorkersCount %d", database, workersCount)
+			cc.log.Infof("%s WorkersCount %d", database, workersCount)
 			delete(cc.WORKERS, database)
 		}
 	}
