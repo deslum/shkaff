@@ -9,4 +9,5 @@ go get github.com/jmoiron/sqlx
 go get github.com/lib/pq
 go get github.com/syndtr/goleveldb/leveldb
 go get github.com/op/go-logging
+go get gopkg.in/mgo.v2
 go install "src/shkaff/shkaff.go"

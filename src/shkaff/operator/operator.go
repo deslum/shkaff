@@ -6,6 +6,7 @@ import (
 	"log"
 	"shkaff/consts"
 	"shkaff/drivers/maindb"
+	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/producer"
 	"shkaff/structs"
 	"sync"
@@ -52,35 +53,35 @@ func remove(slice []*structs.Task, s int) []*structs.Task {
 }
 
 func (oper *operator) taskSender() {
-	databases := make(map[string][]string)
+	var messages []*structs.Task
 	db := oper.postgres.DB
 	rabbit := oper.rabbit
 	for {
 		for numEl, cache := range oper.opCache {
-			if time.Now().Unix() > cache.StartTime.Unix() {
-				if err := json.Unmarshal([]byte(cache.Databases), &databases); err != nil {
-					log.Println("Unmarshal databases", err)
+			if time.Now().Unix() < cache.StartTime.Unix() {
+				continue
+			}
+			switch dbType := cache.DBType; dbType {
+			case "mongodb":
+				messages = mongodb.GetMessages(cache)
+			default:
+				log.Printf("Driver for Database %s not found", cache.DBType)
+				continue
+			}
+			for _, msg := range messages {
+				body, err := json.Marshal(msg)
+				if err != nil {
+					log.Println("Body", err)
 					continue
 				}
-				for base, sheets := range databases {
-					for _, sheet := range sheets {
-						cache.Database = base
-						cache.Sheet = sheet
-						body, err := json.Marshal(cache)
-						if err != nil {
-							log.Println("Body", err)
-							continue
-						}
-						if err := rabbit.Publish(body); err != nil {
-							log.Println("Publish", err)
-							continue
-						}
-						if _, err = db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
-							log.Fatalln(err)
-							continue
-						}
-					}
+				if err := rabbit.Publish(body); err != nil {
+					log.Println("Publish", err)
+					continue
 				}
+			}
+			if _, err := db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
+				log.Fatalln(err)
+				continue
 			}
 			oper.opCache = remove(oper.opCache, numEl)
 		}
