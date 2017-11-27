@@ -22,6 +22,7 @@ type workersStarter struct {
 
 type worker struct {
 	statChan     chan structs.StatMessage
+	dumpChan     chan string
 	databaseName string
 	postgres     *maindb.PSQL
 	statRabbit   *producer.RMQ
@@ -35,6 +36,7 @@ func InitWorker() (ws *workersStarter) {
 		for count := 0; count < workerCount; count++ {
 			worker := &worker{
 				databaseName: database,
+				dumpChan:     make(chan string, workerCount*5),
 				statChan:     make(chan structs.StatMessage, workerCount),
 				postgres:     maindb.InitPSQL(),
 				statRabbit:   producer.InitAMQPProducer("shkaff_stat"),
@@ -50,10 +52,11 @@ func (ws *workersStarter) Run() {
 	var workerWGCount = 0
 	ws.workerWG = sync.WaitGroup{}
 	for _, w := range ws.workers {
-		workerWGCount += 2
+		workerWGCount += 3
 		ws.workerWG.Add(workerWGCount)
 		go w.worker()
 		go w.statSender()
+		go w.dumpAnalyser()
 	}
 	ws.workerWG.Wait()
 }
@@ -95,7 +98,13 @@ func (w *worker) worker() {
 			log.Println("Worker", err, "Failed JSON parse")
 			continue
 		}
-		dbDriver.Dump(task)
+		dumpMsg, err := dbDriver.Dump(task)
+		if err != nil {
+			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
+			log.Println("Worker", "Fail Dump message", err)
+			continue
+		}
+		w.dumpChan <- dumpMsg
 		err = message.Ack(false)
 		if err != nil {
 			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
@@ -125,4 +134,14 @@ func (w *worker) sendStatMessage(action structs.Action, userID, dbid, taskID int
 	statMessage.TaskID = taskID
 	statMessage.Error = err
 	w.statChan <- *statMessage
+}
+
+func (w *worker) dumpAnalyser() {
+	for {
+		msgStr, ok := <-w.dumpChan
+		if !ok {
+			break
+		}
+		fmt.Println(msgStr)
+	}
 }

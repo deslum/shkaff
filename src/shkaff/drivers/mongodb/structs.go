@@ -11,6 +11,3 @@ type MongoParams struct {
 	gzip                   bool
 	parallelCollectionsNum int
 }
-
-type Mongo struct {
-}

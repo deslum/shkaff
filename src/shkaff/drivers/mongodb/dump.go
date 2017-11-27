@@ -59,14 +59,14 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 	mp.parallelCollectionsNum = task.ThreadCount
 }
 
-func (mp *MongoParams) Dump(task *structs.Task) {
+func (mp *MongoParams) Dump(task *structs.Task) (dumpMsg string, err error) {
 	var stderr bytes.Buffer
 	mp.setDBSettings(task)
 	cmd := exec.Command("sh", "-c", mp.ParamsToString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
-		return
+		return "", err
 	}
-	log.Println(stderr.String())
+	return stderr.String(), err
 }
