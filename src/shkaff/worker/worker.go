@@ -9,7 +9,6 @@ import (
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
-	"shkaff/drivers/rmq/producer"
 	"shkaff/structs"
 	"shkaff/structs/databases"
 	"sync"
@@ -25,21 +24,22 @@ type worker struct {
 	dumpChan     chan string
 	databaseName string
 	postgres     *maindb.PSQL
-	statRabbit   *producer.RMQ
 	workRabbit   *consumer.RMQ
 }
 
 func InitWorker() (ws *workersStarter) {
 	cfg := config.InitControlConfig()
 	ws = new(workersStarter)
+	dChan := make(chan string, 100)
+	sChan := make(chan structs.StatMessage, 100)
+	startStatSender(sChan)
 	for database, workerCount := range cfg.WORKERS {
 		for count := 0; count < workerCount; count++ {
 			worker := &worker{
 				databaseName: database,
-				dumpChan:     make(chan string, workerCount*5),
-				statChan:     make(chan structs.StatMessage, workerCount),
+				dumpChan:     dChan,
+				statChan:     sChan,
 				postgres:     maindb.InitPSQL(),
-				statRabbit:   producer.InitAMQPProducer("shkaff_stat"),
 				workRabbit:   consumer.InitAMQPConsumer(),
 			}
 			ws.workers = append(ws.workers, worker)
@@ -49,35 +49,12 @@ func InitWorker() (ws *workersStarter) {
 }
 
 func (ws *workersStarter) Run() {
-	var workerWGCount = 0
 	ws.workerWG = sync.WaitGroup{}
+	ws.workerWG.Add(len(ws.workers))
 	for _, w := range ws.workers {
-		workerWGCount += 3
-		ws.workerWG.Add(workerWGCount)
 		go w.worker()
-		go w.statSender()
-		go w.dumpAnalyser()
 	}
 	ws.workerWG.Wait()
-}
-
-func (w *worker) statSender() {
-	for {
-		statMsg, ok := <-w.statChan
-		if !ok {
-			break
-		}
-		msg, err := json.Marshal(statMsg)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		err = w.statRabbit.Publish(msg)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-	}
 }
 
 func (w *worker) worker() {
@@ -134,14 +111,4 @@ func (w *worker) sendStatMessage(action structs.Action, userID, dbid, taskID int
 	statMessage.TaskID = taskID
 	statMessage.Error = err
 	w.statChan <- *statMessage
-}
-
-func (w *worker) dumpAnalyser() {
-	for {
-		msgStr, ok := <-w.dumpChan
-		if !ok {
-			break
-		}
-		fmt.Println(msgStr)
-	}
 }
