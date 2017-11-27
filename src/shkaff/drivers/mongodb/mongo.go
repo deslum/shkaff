@@ -11,8 +11,8 @@ import (
 )
 
 type mongoCliStruct struct {
-	task     *structs.Task
-	messages []*structs.Task
+	task     structs.Task
+	messages []structs.Task
 }
 
 func (m *mongoCliStruct) forEmptyDatabases() {
@@ -61,10 +61,10 @@ func (m *mongoCliStruct) forFillDatabases() {
 	return
 }
 
-func GetMessages(task *structs.Task) (caches []*structs.Task) {
+func GetMessages(task structs.Task) (caches []structs.Task) {
 	var mongo = new(mongoCliStruct)
 	mongo.task = task
-	if task.Databases == "" {
+	if task.Databases == "{}" {
 		mongo.forEmptyDatabases()
 	} else {
 		mongo.forFillDatabases()

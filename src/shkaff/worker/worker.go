@@ -79,7 +79,8 @@ func (w *worker) statSender() {
 
 func (w *worker) worker() {
 	var task *structs.Task
-	w.workRabbit.InitConnection(w.databaseName)
+
+	w.workRabbit.InitConnection("mongodb")
 	dbDriver, err := w.getDatabaseType()
 	if err != nil {
 		log.Println("Worker", err)

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 from pymongo import MongoClient
 from multiprocessing import Pool
 

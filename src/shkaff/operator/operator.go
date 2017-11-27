@@ -16,7 +16,7 @@ import (
 )
 
 type operator struct {
-	opCache    []*structs.Task
+	opCache    []structs.Task
 	operatorWG sync.WaitGroup
 	postgres   *maindb.PSQL
 	rabbit     *producer.RMQ
@@ -39,7 +39,7 @@ func (oper *operator) Run() {
 	oper.operatorWG.Wait()
 }
 
-func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
+func isDublicateTask(opc []structs.Task, task structs.Task) (result bool) {
 	for _, oc := range opc {
 		if oc.TaskID == task.TaskID {
 			return true
@@ -48,12 +48,12 @@ func isDublicateTask(opc []*structs.Task, task *structs.Task) (result bool) {
 	return false
 }
 
-func remove(slice []*structs.Task, s int) []*structs.Task {
+func remove(slice []structs.Task, s int) []structs.Task {
 	return append(slice[:s], slice[s+1:]...)
 }
 
 func (oper *operator) taskSender() {
-	var messages []*structs.Task
+	var messages []structs.Task
 	db := oper.postgres.DB
 	rabbit := oper.rabbit
 	for {
@@ -90,7 +90,7 @@ func (oper *operator) taskSender() {
 }
 
 func (oper *operator) aggregator() {
-	var task = &structs.Task{}
+	var task = structs.Task{}
 	var psqlUpdateTime *time.Timer
 	db := oper.postgres.DB
 	refreshTimeScan := oper.postgres.RefreshTimeScan
