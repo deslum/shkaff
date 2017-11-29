@@ -1,6 +1,13 @@
 package worker
 
-import "fmt"
+import (
+	"log"
+	"regexp"
+)
+
+var (
+	MONGO_SUCESS_DUMP = regexp.MustCompile(`\tdone\ dumping`)
+)
 
 func dumpAnalyser(dchan chan string) {
 	for {
@@ -8,6 +15,9 @@ func dumpAnalyser(dchan chan string) {
 		if !ok {
 			break
 		}
-		fmt.Println(msgStr)
+		reResult := MONGO_SUCESS_DUMP.FindString(msgStr)
+		if reResult != "" {
+			log.Println("OK")
+		}
 	}
 }

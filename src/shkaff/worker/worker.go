@@ -43,7 +43,7 @@ func InitWorker() (ws *workersStarter) {
 }
 
 func (ws *workersStarter) Run() {
-	ws.workerWG.Add(2)
+	ws.workerWG.Add(1)
 	for _, w := range ws.workers {
 		go w.worker()
 	}
@@ -74,7 +74,6 @@ func (w *worker) worker() {
 			continue
 		}
 		w.dumpChan <- dumpMsg
-		w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
 		message.Ack(false)
 	}
 }
