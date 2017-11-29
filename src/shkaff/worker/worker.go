@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"shkaff/config"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
@@ -28,29 +27,24 @@ type worker struct {
 }
 
 func InitWorker() (ws *workersStarter) {
-	cfg := config.InitControlConfig()
 	ws = new(workersStarter)
+	ws.workerWG = sync.WaitGroup{}
 	dChan := make(chan string, 100)
-	sChan := make(chan structs.StatMessage, 100)
+	sChan := make(chan structs.StatMessage, 1000)
 	startStatSender(sChan)
-	for database, workerCount := range cfg.WORKERS {
-		for count := 0; count < workerCount; count++ {
-			worker := &worker{
-				databaseName: database,
-				dumpChan:     dChan,
-				statChan:     sChan,
-				postgres:     maindb.InitPSQL(),
-				workRabbit:   consumer.InitAMQPConsumer(),
-			}
-			ws.workers = append(ws.workers, worker)
-		}
+	worker := &worker{
+		databaseName: "mongodb",
+		dumpChan:     dChan,
+		statChan:     sChan,
+		postgres:     maindb.InitPSQL(),
+		workRabbit:   consumer.InitAMQPConsumer(),
 	}
+	ws.workers = append(ws.workers, worker)
 	return
 }
 
 func (ws *workersStarter) Run() {
-	ws.workerWG = sync.WaitGroup{}
-	ws.workerWG.Add(len(ws.workers))
+	ws.workerWG.Add(1)
 	for _, w := range ws.workers {
 		go w.worker()
 	}
@@ -59,7 +53,6 @@ func (ws *workersStarter) Run() {
 
 func (w *worker) worker() {
 	var task *structs.Task
-
 	w.workRabbit.InitConnection("mongodb")
 	dbDriver, err := w.getDatabaseType()
 	if err != nil {
@@ -75,6 +68,7 @@ func (w *worker) worker() {
 			log.Println("Worker", err, "Failed JSON parse")
 			continue
 		}
+		log.Println(task.Database, task.Sheet, "3")
 		dumpMsg, err := dbDriver.Dump(task)
 		if err != nil {
 			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
@@ -82,13 +76,8 @@ func (w *worker) worker() {
 			continue
 		}
 		w.dumpChan <- dumpMsg
-		err = message.Ack(false)
-		if err != nil {
-			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
-			log.Println("Worker", "Fail Ack message", err)
-			continue
-		}
 		w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
+		message.Ack(true)
 	}
 }
 
@@ -104,11 +93,11 @@ func (w *worker) getDatabaseType() (dbDriver databases.DatabaseDriver, err error
 }
 
 func (w *worker) sendStatMessage(action structs.Action, userID, dbid, taskID int, err error) {
-	var statMessage = new(structs.StatMessage)
+	var statMessage structs.StatMessage
 	statMessage.Act = action
 	statMessage.UserID = userID
 	statMessage.DBID = dbid
 	statMessage.TaskID = taskID
 	statMessage.Error = err
-	w.statChan <- *statMessage
+	w.statChan <- statMessage
 }
