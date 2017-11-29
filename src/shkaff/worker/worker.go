@@ -29,22 +29,21 @@ type worker struct {
 func InitWorker() (ws *workersStarter) {
 	ws = new(workersStarter)
 	ws.workerWG = sync.WaitGroup{}
-	dChan := make(chan string, 100)
-	sChan := make(chan structs.StatMessage, 1000)
-	startStatSender(sChan)
 	worker := &worker{
 		databaseName: "mongodb",
-		dumpChan:     dChan,
-		statChan:     sChan,
+		dumpChan:     make(chan string, 1500),
+		statChan:     make(chan structs.StatMessage),
 		postgres:     maindb.InitPSQL(),
 		workRabbit:   consumer.InitAMQPConsumer(),
 	}
 	ws.workers = append(ws.workers, worker)
+	go startStatSender(worker.statChan)
+	go dumpAnalyser(worker.dumpChan)
 	return
 }
 
 func (ws *workersStarter) Run() {
-	ws.workerWG.Add(1)
+	ws.workerWG.Add(2)
 	for _, w := range ws.workers {
 		go w.worker()
 	}
@@ -64,20 +63,19 @@ func (w *worker) worker() {
 		err := json.Unmarshal(message.Body, &task)
 		w.sendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
 		if err != nil {
-			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			log.Println("Worker", err, "Failed JSON parse")
+			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			continue
 		}
-		log.Println(task.Database, task.Sheet, "3")
 		dumpMsg, err := dbDriver.Dump(task)
 		if err != nil {
-			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			log.Println("Worker", "Fail Dump message", err)
+			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			continue
 		}
 		w.dumpChan <- dumpMsg
 		w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
-		message.Ack(true)
+		message.Ack(false)
 	}
 }
 

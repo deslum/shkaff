@@ -16,7 +16,7 @@ func startStatSender(sChan chan structs.StatMessage) {
 	stat := new(statSender)
 	stat.sChan = sChan
 	stat.producer = producer.InitAMQPProducer("shkaff_stat")
-	go stat.statSender()
+	stat.statSender()
 }
 
 func (stat *statSender) statSender() {
@@ -33,8 +33,6 @@ func (stat *statSender) statSender() {
 				log.Println(err)
 				continue
 			}
-		default:
-
 		}
 	}
 }
