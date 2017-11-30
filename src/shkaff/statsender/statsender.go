@@ -13,6 +13,7 @@ type StatSender struct {
 }
 
 func Run() (stat *StatSender) {
+	log.Println("Start StatSender")
 	stat = new(StatSender)
 	stat.sChan = make(chan structs.StatMessage)
 	stat.producer = producer.InitAMQPProducer("shkaff_stat")

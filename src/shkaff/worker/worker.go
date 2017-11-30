@@ -29,13 +29,14 @@ type worker struct {
 
 func InitWorker() (ws *workersStarter) {
 	ws = new(workersStarter)
+	stat := statsender.Run()
 	ws.workerWG = sync.WaitGroup{}
 	worker := &worker{
 		databaseName: "mongodb",
-		dumpChan:     make(chan string, 1500),
+		dumpChan:     make(chan string, 100),
 		postgres:     maindb.InitPSQL(),
 		workRabbit:   consumer.InitAMQPConsumer(),
-		stat:         statsender.Run(),
+		stat:         stat,
 	}
 	ws.workers = append(ws.workers, worker)
 	return
@@ -58,7 +59,7 @@ func (ws *workersStarter) Run() {
 
 func (w *worker) worker() {
 	var task *structs.Task
-	w.workRabbit.InitConnection("mongodb")
+	w.workRabbit.InitConnection(w.databaseName)
 	dbDriver, err := w.getDatabaseType()
 	if err != nil {
 		log.Println("Worker", err)
