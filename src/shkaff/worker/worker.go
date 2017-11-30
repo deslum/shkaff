@@ -8,6 +8,7 @@ import (
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
+	"shkaff/statsender"
 	"shkaff/structs"
 	"shkaff/structs/databases"
 	"sync"
@@ -19,11 +20,11 @@ type workersStarter struct {
 }
 
 type worker struct {
-	statChan     chan structs.StatMessage
 	dumpChan     chan string
 	databaseName string
 	postgres     *maindb.PSQL
 	workRabbit   *consumer.RMQ
+	stat         *statsender.StatSender
 }
 
 func InitWorker() (ws *workersStarter) {
@@ -32,12 +33,11 @@ func InitWorker() (ws *workersStarter) {
 	worker := &worker{
 		databaseName: "mongodb",
 		dumpChan:     make(chan string, 1500),
-		statChan:     make(chan structs.StatMessage),
 		postgres:     maindb.InitPSQL(),
 		workRabbit:   consumer.InitAMQPConsumer(),
+		stat:         statsender.Run(),
 	}
 	ws.workers = append(ws.workers, worker)
-	go startStatSender(worker.statChan)
 	return
 }
 
@@ -72,15 +72,15 @@ func (w *worker) worker() {
 			message.Ack(false)
 			continue
 		}
-		w.sendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
+		w.stat.SendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
 		_, err = dbDriver.Dump(task)
 		if err != nil {
-			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
+			w.stat.SendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 			log.Println(err)
 			message.Ack(false)
 			continue
 		}
-		w.sendStatMessage(1, task.UserID, task.DBID, task.TaskID, nil)
+		w.stat.SendStatMessage(1, task.UserID, task.DBID, task.TaskID, nil)
 		// w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
 		// _, err = dbDriver.Restore(task)
 		// if err != nil {
@@ -103,14 +103,4 @@ func (w *worker) getDatabaseType() (dbDriver databases.DatabaseDriver, err error
 		answer := fmt.Sprintf("Driver %s not found", w.databaseName)
 		return nil, errors.New(answer)
 	}
-}
-
-func (w *worker) sendStatMessage(action structs.Action, userID, dbid, taskID int, err error) {
-	var statMessage structs.StatMessage
-	statMessage.Act = action
-	statMessage.UserID = userID
-	statMessage.DBID = dbid
-	statMessage.TaskID = taskID
-	statMessage.Error = err
-	w.statChan <- statMessage
 }
