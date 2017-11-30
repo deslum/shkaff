@@ -6,18 +6,22 @@ import (
 
 type Action int
 
-// 0 - NewDumping
-// 1 - StartDumping
-// 2 - SuccessDumping
-// 3 - FailDumping
-// 4 - RetryDumping
+// 0 - StartDumping
+// 1 - SuccessDumping
+// 2 - FailDumping
+// 3 - StartRestoring
+// 4 - SuccessRestoring
+// 5 - FailRestoring
 
 const (
-	New Action = 0 + iota
-	Start
-	Success
-	Fail
-	Retry
+	NewDump Action = 0 + iota
+	StartDump
+	SuccessDump
+	FailDump
+	NewRestore
+	StartRestore
+	SuccessRestore
+	FailRestore
 )
 
 type Task struct {

@@ -10,4 +10,5 @@ type MongoParams struct {
 	collection             string
 	gzip                   bool
 	parallelCollectionsNum int
+	resultChan             chan string
 }

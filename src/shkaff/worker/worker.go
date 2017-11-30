@@ -38,7 +38,6 @@ func InitWorker() (ws *workersStarter) {
 	}
 	ws.workers = append(ws.workers, worker)
 	go startStatSender(worker.statChan)
-	go dumpAnalyser(worker.dumpChan)
 	return
 }
 
@@ -49,6 +48,13 @@ func (ws *workersStarter) Run() {
 	}
 	ws.workerWG.Wait()
 }
+
+// 0 - StartDumping
+// 1 - SuccessDumping
+// 2 - FailDumping
+// 3 - StartRestoring
+// 4 - SuccessRestoring
+// 5 - FailRestoring
 
 func (w *worker) worker() {
 	var task *structs.Task
@@ -61,19 +67,29 @@ func (w *worker) worker() {
 	log.Printf("Start Worker for %s\n", w.databaseName)
 	for message := range w.workRabbit.Msgs {
 		err := json.Unmarshal(message.Body, &task)
-		w.sendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
 		if err != nil {
 			log.Println("Worker", err, "Failed JSON parse")
-			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
+			message.Ack(false)
 			continue
 		}
-		dumpMsg, err := dbDriver.Dump(task)
+		w.sendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
+		_, err = dbDriver.Dump(task)
 		if err != nil {
-			log.Println("Worker", "Fail Dump message", err)
 			w.sendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
+			log.Println(err)
+			message.Ack(false)
 			continue
 		}
-		w.dumpChan <- dumpMsg
+		w.sendStatMessage(1, task.UserID, task.DBID, task.TaskID, nil)
+		// w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
+		// _, err = dbDriver.Restore(task)
+		// if err != nil {
+		// 	w.sendStatMessage(5, task.UserID, task.DBID, task.TaskID, err)
+		// 	log.Println(err)
+		// 	message.Ack(false)
+		// 	continue
+		// }
+		// w.sendStatMessage(4, task.UserID, task.DBID, task.TaskID, err)
 		message.Ack(false)
 	}
 }

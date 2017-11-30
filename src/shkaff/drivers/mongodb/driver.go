@@ -2,13 +2,20 @@ package mongodb
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
 	"shkaff/consts"
 	"shkaff/structs"
 	"shkaff/structs/databases"
 	"strings"
+)
+
+var (
+	MONGO_SUCESS_DUMP    = regexp.MustCompile(`\tdone\ dumping`)
+	MONGO_SUCESS_RESTORE = regexp.MustCompile(`\tdone\ dumping`)
 )
 
 func (mp *MongoParams) isUseAuth() bool {
@@ -59,7 +66,7 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 	mp.parallelCollectionsNum = task.ThreadCount
 }
 
-func (mp *MongoParams) Dump(task *structs.Task) (dumpMsg string, err error) {
+func (mp *MongoParams) Dump(task *structs.Task) (dumpResult string, err error) {
 	var stderr bytes.Buffer
 	mp.setDBSettings(task)
 	cmd := exec.Command("sh", "-c", mp.ParamsToString())
@@ -68,5 +75,28 @@ func (mp *MongoParams) Dump(task *structs.Task) (dumpMsg string, err error) {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return "", err
 	}
-	return stderr.String(), err
+	dumpResult = stderr.String()
+	reResult := MONGO_SUCESS_DUMP.FindString(dumpResult)
+	if reResult != "" {
+		return
+	}
+	return dumpResult, errors.New("Bad dump result")
+}
+
+func (mp *MongoParams) Restore(task *structs.Task) (restoreResult string, err error) {
+	log.Println("Mock restore")
+	// var stderr bytes.Buffer
+	// mp.setDBSettings(task)
+	// cmd := exec.Command("sh", "-c", mp.ParamsToString())
+	// cmd.Stderr = &stderr
+	// if err := cmd.Run(); err != nil {
+	// 	log.Println(fmt.Sprint(err) + ": " + stderr.String())
+	// 	return "", err
+	// }
+	// restoreResult = stderr.String()
+	// reResult := MONGO_SUCESS_DUMP.FindString(restoreResult)
+	// if reResult != "" {
+	// 	return
+	// }
+	return restoreResult, errors.New("Bad restore result")
 }
