@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
   PostgreSQL:
@@ -39,7 +39,7 @@ services:
       volumes:    
         - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"
 
-  ClickHouse:
+  ClickHouse-Server:
     restart: always
     image: yandex/clickhouse-server
     ports:
@@ -47,4 +47,13 @@ services:
       - "9000:9000"
       - "9009:9009"
 
-
+  ClickHouse-Client:
+    image: yandex/clickhouse-client
+    links:
+      - ClickHouse-Server:ClickHouse-Server
+    entrypoint: /bin/bash
+    environment:
+      - HOUSE_HOST=ClickHouse-Server
+    volumes:
+      - ./clickhouse:/opt
+    command: "/opt/create_table.sh"
