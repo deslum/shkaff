@@ -28,6 +28,10 @@ type ShkaffConfig struct {
 	DATABASE_PASS         string `json:"DATABASE_PASS"`
 	DATABASE_DB           string `json:"DATABASE_DB"`
 	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
+	STATBASE_HOST         string `json:"STATBASE_HOST"`
+	STATBASE_PORT         int    `json:"STATBASE_PORT"`
+	STATBASE_USER         string `json:"STATBASE_USER"`
+	STATBASE_PASS         string `json:"STATBASE_PASS"`
 	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
 	WORKERS               map[string]int
 	log                   *logging.Logger
@@ -51,7 +55,7 @@ func InitControlConfig() *ShkaffConfig {
 		return nil
 	}
 	cc.log = logger.InitLogger("config")
-		cc.validate()
+	cc.validate()
 	return cc
 }
 
@@ -89,6 +93,16 @@ func (cc *ShkaffConfig) validate() {
 	if cc.RMQ_PASS == "" {
 		log.Fatalln(consts.INVALID_AMQP_PASSWORD)
 	}
+
+	if cc.STATBASE_HOST == "" {
+		log.Printf(consts.INVALID_STATDB_HOST, consts.DEFAULT_HOST)
+		cc.STATBASE_HOST = consts.DEFAULT_HOST
+	}
+	if cc.STATBASE_PORT < 1025 || cc.STATBASE_PORT > 65535 {
+		log.Printf(consts.INVALID_STATDB_PORT, cc.STATBASE_PORT, consts.DEFAULT_STATDB_PORT)
+		cc.STATBASE_PORT = consts.DEFAULT_STATDB_PORT
+	}
+
 	if cc.REFRESH_DATABASE_SCAN == 0 {
 		cc.REFRESH_DATABASE_SCAN = consts.DEFAULT_REFRESH_DATABASE_SCAN
 	}

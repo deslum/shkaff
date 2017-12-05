@@ -73,24 +73,24 @@ func (w *worker) worker() {
 			message.Ack(false)
 			continue
 		}
-		w.stat.SendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
+		w.stat.SendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
 		_, err = dbDriver.Dump(task)
 		if err != nil {
-			w.stat.SendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
+			w.stat.SendStatMessage(5, task.UserID, task.DBID, task.TaskID, err)
 			log.Println(err)
 			message.Ack(false)
 			continue
 		}
-		w.stat.SendStatMessage(1, task.UserID, task.DBID, task.TaskID, nil)
-		// w.sendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
-		// _, err = dbDriver.Restore(task)
-		// if err != nil {
-		// 	w.sendStatMessage(5, task.UserID, task.DBID, task.TaskID, err)
-		// 	log.Println(err)
-		// 	message.Ack(false)
-		// 	continue
-		// }
-		// w.sendStatMessage(4, task.UserID, task.DBID, task.TaskID, err)
+		w.stat.SendStatMessage(4, task.UserID, task.DBID, task.TaskID, nil)
+		w.stat.SendStatMessage(6, task.UserID, task.DBID, task.TaskID, nil)
+		_, err = dbDriver.Restore(task)
+		if err != nil {
+			w.stat.SendStatMessage(8, task.UserID, task.DBID, task.TaskID, err)
+			log.Println(err)
+			message.Ack(false)
+			continue
+		}
+		w.stat.SendStatMessage(7, task.UserID, task.DBID, task.TaskID, err)
 		message.Ack(false)
 	}
 }

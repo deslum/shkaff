@@ -10,7 +10,7 @@
 	"DATABASE_PASS": "test",
 	"DATABASE_DB": "shkaff",
 	"STATBASE_HOST": "localhost",
-	"STATBASE_PORT": 5432,
+	"STATBASE_PORT": 9000,
 	"STATBASE_USER": "test",
 	"STATBASE_PASS": "test",
 	"REFRESH_DATABASE_SCAN": 10

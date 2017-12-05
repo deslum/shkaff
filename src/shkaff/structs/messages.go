@@ -14,7 +14,11 @@ type Action int
 // 5 - FailRestoring
 
 const (
-	NewDump Action = 0 + iota
+	NewOperator Action = 0 + iota
+	StartOperator
+	SuccessOperator
+	FailOperator
+	NewDump
 	StartDump
 	SuccessDump
 	FailDump
