@@ -50,13 +50,6 @@ func (ws *workersStarter) Run() {
 	ws.workerWG.Wait()
 }
 
-// 0 - StartDumping
-// 1 - SuccessDumping
-// 2 - FailDumping
-// 3 - StartRestoring
-// 4 - SuccessRestoring
-// 5 - FailRestoring
-
 func (w *worker) worker() {
 	var task *structs.Task
 	w.workRabbit.InitConnection(w.databaseName)
@@ -70,24 +63,21 @@ func (w *worker) worker() {
 		err := json.Unmarshal(message.Body, &task)
 		if err != nil {
 			log.Println("Worker", err, "Failed JSON parse")
-			message.Ack(false)
 			continue
 		}
 		w.stat.SendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
-		_, err = dbDriver.Dump(task)
+		err = dbDriver.Dump(task)
 		if err != nil {
 			w.stat.SendStatMessage(5, task.UserID, task.DBID, task.TaskID, err)
 			log.Println(err)
-			message.Ack(false)
 			continue
 		}
 		w.stat.SendStatMessage(4, task.UserID, task.DBID, task.TaskID, nil)
 		w.stat.SendStatMessage(6, task.UserID, task.DBID, task.TaskID, nil)
-		_, err = dbDriver.Restore(task)
+		err = dbDriver.Restore(task)
 		if err != nil {
 			w.stat.SendStatMessage(8, task.UserID, task.DBID, task.TaskID, err)
 			log.Println(err)
-			message.Ack(false)
 			continue
 		}
 		w.stat.SendStatMessage(7, task.UserID, task.DBID, task.TaskID, err)

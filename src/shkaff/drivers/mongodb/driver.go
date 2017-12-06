@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	MONGO_SUCESS_DUMP    = regexp.MustCompile(`\tdone\ dumping`)
-	MONGO_SUCESS_RESTORE = regexp.MustCompile(`\tdone\ dumping`)
+	MONGO_SUCESS_DUMP   = regexp.MustCompile(`\tdone\ dumping`)
+	MONGO_ERROR_RESTORE = regexp.MustCompile(`exit\ status\ 1`)
 )
 
 type MongoParams struct {
@@ -79,37 +79,37 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 	mp.parallelCollectionsNum = task.ThreadCount
 }
 
-func (mp *MongoParams) Dump(task *structs.Task) (dumpResult string, err error) {
+func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 	var stderr bytes.Buffer
 	mp.setDBSettings(task)
 	cmd := exec.Command("sh", "-c", mp.ParamsToString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
-		return "", err
+		return err
 	}
-	dumpResult = stderr.String()
+	dumpResult := stderr.String()
 	reResult := MONGO_SUCESS_DUMP.FindString(dumpResult)
 	if reResult != "" {
 		return
 	}
-	return dumpResult, errors.New("Bad dump result")
+	return errors.New(dumpResult)
 }
 
-func (mp *MongoParams) Restore(task *structs.Task) (restoreResult string, err error) {
-	log.Println("Mock restore")
-	// var stderr bytes.Buffer
-	// mp.setDBSettings(task)
-	// cmd := exec.Command("sh", "-c", mp.ParamsToString())
-	// cmd.Stderr = &stderr
-	// if err := cmd.Run(); err != nil {
-	// 	log.Println(fmt.Sprint(err) + ": " + stderr.String())
-	// 	return "", err
-	// }
-	// restoreResult = stderr.String()
-	// reResult := MONGO_SUCESS_DUMP.FindString(restoreResult)
-	// if reResult != "" {
-	// 	return
-	// }
-	return restoreResult, errors.New("Bad restore result")
+func (mp *MongoParams) Restore(task *structs.Task) (err error) {
+	var stderr bytes.Buffer
+	mp.setDBSettings(task)
+	//ONLY FOR TEST
+	cmd := exec.Command("sh", "-c", "mongorestore --gzip --drop --stopOnError")
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		log.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return err
+	}
+	restoreResult := stderr.String()
+	reResult := MONGO_ERROR_RESTORE.FindString(restoreResult)
+	if reResult != "" {
+		return errors.New(strings.TrimSpace(restoreResult))
+	}
+	return
 }

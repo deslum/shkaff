@@ -48,9 +48,20 @@ type Task struct {
 }
 
 type StatMessage struct {
-	TaskID int    `json:"task_id"`
-	DBID   int    `json:"db_id"`
-	UserID int    `json:"user_id"`
-	Act    Action `json:"action"`
-	Error  error  `json:"error"`
+	UserID          uint16    `db:"UserId" json:"uid"`
+	DbID            uint16    `db:"DbID" json:"did"`
+	TaskID          uint16    `db:"TaskId" json:"tid"`
+	NewOperator     uint32    `db:"NewOperator" json:"no"`
+	SuccessOperator uint32    `db:"SuccessOperator" json:"so"`
+	FailOperator    uint32    `db:"FailOperator" json:"fo"`
+	ErrorOperator   string    `db:"ErrorOperator" json:"eo"`
+	NewDump         uint32    `db:"NewDump" json:"nd"`
+	SuccessDump     uint32    `db:"SuccessDump" json:"sd"`
+	FailDump        uint32    `db:"FailDump" json:"fd"`
+	ErrorDump       string    `db:"ErrorDump" json:"ed"`
+	NewRestore      uint32    `db:"NewRestore" json:"nr"`
+	SuccessRestore  uint32    `db:"SuccessRestore" json:"sr"`
+	FailRestore     uint32    `db:"FailRestore" json:"fr"`
+	ErrorRestore    string    `db:"ErrorRestore" json:"er"`
+	CreateDate      time.Time `db:"CreateDate" json:"cd"`
 }

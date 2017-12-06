@@ -23,8 +23,9 @@ services:
       - MONGODB_PASS=test
     ports:
       - "27017:27017"
-    command:
-      - --storageEngine=wiredTiger
+    volumes:
+      - ./mongodb_test:/opt
+    command: "/opt/restore.sh"
 
   RabbitMQ:
       restart: always

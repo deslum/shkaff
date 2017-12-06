@@ -1,10 +1,9 @@
 #!/usr/bin/python2
 from pymongo import MongoClient
 from multiprocessing import Pool
-
+import random, string
 
 connection = MongoClient('localhost', maxPoolSize=200)
-	
 
 def insert(numbase):
 	db_name = 'backup_me_{}'.format(numbase)
@@ -12,7 +11,7 @@ def insert(numbase):
 	bulk = list()
 	for num_coll in xrange(0,5):
 		coll_name = 'user_data_{}'.format(num_coll)
-		db[coll_name].insert({"1":"1"})
+		db[coll_name].insert({"1":''.join(random.choice(string.ascii_uppercase + string.digits) for _ in xrange(20))})
 
 
 

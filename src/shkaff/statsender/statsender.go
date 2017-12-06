@@ -10,27 +10,8 @@ import (
 	"time"
 )
 
-type Stat struct {
-	UserID          uint16    `db:"UserId" json:"uid"`
-	DbID            uint16    `db:"DbID" json:"did"`
-	TaskID          uint16    `db:"TaskId" json:"tid"`
-	NewOperator     uint32    `db:"NewOperator" json:"no"`
-	SuccessOperator uint32    `db:"SuccessOperator" json:"so"`
-	FailOperator    uint32    `db:"FailOperator" json:"fo"`
-	ErrorOperator   string    `db:"ErrorOperator" json:"eo"`
-	NewDump         uint32    `db:"NewDump" json:"nd"`
-	SuccessDump     uint32    `db:"SuccessDump" json:"sd"`
-	FailDump        uint32    `db:"FailDump" json:"fd"`
-	ErrorDump       string    `db:"ErrorDump" json:"ed"`
-	NewRestore      uint32    `db:"NewRestore" json:"nr"`
-	SuccessRestore  uint32    `db:"SuccessRestore" json:"sr"`
-	FailRestore     uint32    `db:"FailRestore" json:"fr"`
-	ErrorRestore    string    `db:"ErrorRestore" json:"er"`
-	CreateDate      time.Time `db:"CreateDate" json:"cd"`
-}
-
 type StatSender struct {
-	sChan    chan Stat
+	sChan    chan structs.StatMessage
 	producer *producer.RMQ
 	consumer *consumer.RMQ
 	statDB   *stat.StatDB
@@ -39,7 +20,7 @@ type StatSender struct {
 func Run() (statSender *StatSender) {
 	log.Println("Start StatSender")
 	statSender = new(StatSender)
-	statSender.sChan = make(chan Stat)
+	statSender.sChan = make(chan structs.StatMessage)
 	statSender.producer = producer.InitAMQPProducer("shkaff_stat")
 	statSender.consumer = consumer.InitAMQPConsumer()
 	statSender.statDB = stat.InitStat()
@@ -49,7 +30,7 @@ func Run() (statSender *StatSender) {
 }
 
 func (statSender *StatSender) SendStatMessage(action structs.Action, userID, dbid, taskID int, err error) {
-	var statMessage Stat
+	var statMessage structs.StatMessage
 	statMessage.UserID = uint16(userID)
 	statMessage.DbID = uint16(dbid)
 	statMessage.TaskID = uint16(taskID)
@@ -99,8 +80,7 @@ func (statSender *StatSender) statSender() {
 }
 
 func (statSender *StatSender) statWorker() {
-	var statMessage Stat
-	db := statSender.statDB.DB
+	var statMessage structs.StatMessage
 	statSender.consumer.InitConnection("shkaff_stat")
 	for message := range statSender.consumer.Msgs {
 		err := json.Unmarshal(message.Body, &statMessage)
@@ -108,14 +88,9 @@ func (statSender *StatSender) statWorker() {
 			log.Println("statWorker", err, "Failed JSON parse")
 			continue
 		}
-		tx := db.MustBegin()
-		_, err = tx.NamedExec("INSERT INTO shkaff_stat (UserId, DbID, TaskId, NewOperator, SuccessOperator, FailOperator, ErrorOperator, NewDump, SuccessDump, FailDump, ErrorDump, NewRestore, SuccessRestore, FailRestore, ErrorRestore, CreateDate) VALUES (:UserId, :DbID, :TaskId, :NewOperator, :SuccessOperator, :FailOperator, :ErrorOperator, :NewDump, :SuccessDump, :FailDump, :ErrorDump, :NewRestore, :SuccessRestore, :FailRestore, :ErrorRestore, :CreateDate)", &statMessage)
+		err = statSender.statDB.Insert(statMessage)
 		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if err := tx.Commit(); err != nil {
-			log.Println(err)
+			log.Println("statWorker", err)
 			continue
 		}
 		message.Ack(false)
