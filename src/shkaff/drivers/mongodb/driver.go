@@ -11,13 +11,14 @@ import (
 	"shkaff/consts"
 	"shkaff/structs"
 	"shkaff/structs/databases"
-	"strconv"
 	"strings"
 )
 
 var (
-	MONGO_SUCESS_DUMP   = regexp.MustCompile(`\tdone\ dumping`)
-	MONGO_ERROR_RESTORE = regexp.MustCompile(`exit\ status\ 1`)
+	MONGO_SUCESS_DUMP = regexp.MustCompile(`\tdone\ dumping`)
+	RESTORE_ERRORS    = [2]*regexp.Regexp{
+		regexp.MustCompile(`exit\ status\ 1`),
+		regexp.MustCompile(`skipping...`)}
 )
 
 type MongoParams struct {
@@ -38,7 +39,7 @@ func (mp *MongoParams) isUseAuth() bool {
 	return mp.login != "" && mp.password != ""
 }
 
-func (mp *MongoParams) ParamsToString() (commandString string) {
+func (mp *MongoParams) ParamsToDumpString() (commandString string) {
 	var cmdLine []string
 	cmdLine = append(cmdLine, consts.MONGO_DUMP_COMMAND)
 	cmdLine = append(cmdLine, fmt.Sprintf("%s %s", consts.MONGO_HOST_KEY, mp.host))
@@ -66,6 +67,39 @@ func (mp *MongoParams) ParamsToString() (commandString string) {
 	return
 }
 
+func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
+	var cmdLine []string
+	mp.cfg = config.InitControlConfig()
+	cmdLine = append(cmdLine, "mongorestore")
+	cmdLine = append(cmdLine, fmt.Sprintf("%s %s", consts.MONGO_HOST_KEY, mp.cfg.MONGO_RESTORE_HOST))
+	cmdLine = append(cmdLine, fmt.Sprintf("%s %d", consts.MONGO_PORT_KEY, mp.cfg.MONGO_RESTORE_PORT))
+	if mp.isUseAuth() {
+		auth := fmt.Sprintf("%s %s %s %s", consts.MONGO_LOGIN_KEY, mp.login, consts.MONGO_PASS_KEY, mp.password)
+		cmdLine = append(cmdLine, auth)
+	}
+	if mp.ipv6 {
+		cmdLine = append(cmdLine, consts.MONGO_GZIP_KEY)
+	}
+	if mp.gzip {
+		cmdLine = append(cmdLine, consts.MONGO_GZIP_KEY)
+	}
+	//	if mp.database != "" {
+	//		cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", consts.MONGO_DATABASE_KEY, mp.database))
+	//		if mp.collection != "" {
+	//			cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", consts.MONGO_COLLECTION_KEY, mp.collection))
+	//		}
+	//	}
+	//	if mp.collection == "" && mp.parallelCollectionsNum > 4 {
+	//		cmdLine = append(cmdLine, fmt.Sprintf("%s=%d", consts.MONGO_PARALLEL_KEY, mp.parallelCollectionsNum))
+	//	}
+	dir := fmt.Sprintf("'--dir=dump/%s/%s.bson.gz'", mp.database, mp.collection)
+	cmdLine = append(cmdLine, dir)
+	cmdLine = append(cmdLine, "--stopOnError")
+	cmdLine = append(cmdLine, "--drop")
+	commandString = strings.Join(cmdLine, " ")
+	return
+}
+
 func InitDriver() (mp databases.DatabaseDriver) {
 	return &MongoParams{}
 }
@@ -85,7 +119,7 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 	var stderr bytes.Buffer
 	mp.setDBSettings(task)
-	cmd := exec.Command("sh", "-c", mp.ParamsToString())
+	cmd := exec.Command("sh", "-c", mp.ParamsToDumpString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
@@ -101,21 +135,19 @@ func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 
 func (mp *MongoParams) Restore(task *structs.Task) (err error) {
 	var stderr bytes.Buffer
-	mp.cfg = config.InitControlConfig()
 	mp.setDBSettings(task)
-	host := mp.cfg.MONGO_RESTORE_HOST
-	port := strconv.Itoa(mp.cfg.MONGO_RESTORE_PORT)
-	cmd := exec.Command("sh", "-c", "mongorestore", "--host", host,
-		"--port", port, "--gzip", "--drop", "--stopOnError")
+	cmd := exec.Command("sh", "-c", mp.ParamsToRestoreString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
 	restoreResult := stderr.String()
-	reResult := MONGO_ERROR_RESTORE.FindString(restoreResult)
-	if reResult != "" {
-		return errors.New(strings.TrimSpace(restoreResult))
+	for _, restoreErrorPattern := range RESTORE_ERRORS {
+		reResult := restoreErrorPattern.FindString(restoreResult)
+		if reResult != "" {
+			return errors.New(strings.TrimSpace(restoreResult))
+		}
 	}
 	return
 }

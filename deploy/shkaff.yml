@@ -27,6 +27,20 @@ services:
       - ./mongodb_test:/opt
 #    command: "/opt/restore.sh"
 
+  MongoDB-Restore:
+    restart: always
+    image: mongo:latest
+    environment:
+      - MONGODB_USER=test
+      - MONGODB_DATABASE=test
+      - MONGODB_PASS=test
+    ports:
+      - "27018:27017"
+    volumes:
+      - ./mongodb_test:/opt
+#    command: "/opt/restore.sh"
+
+
   RabbitMQ:
       restart: always
       image: "rabbitmq:latest"
