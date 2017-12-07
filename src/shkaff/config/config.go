@@ -17,23 +17,25 @@ var (
 )
 
 type ShkaffConfig struct {
-	RMQ_HOST              string `json:"RMQ_HOST"`
-	RMQ_PORT              int    `json:"RMQ_PORT"`
-	RMQ_USER              string `json:"RMQ_USER"`
-	RMQ_PASS              string `json:"RMQ_PASS"`
-	RMQ_VHOST             string `json:"RMQ_VHOST"`
-	DATABASE_HOST         string `json:"DATABASE_HOST"`
-	DATABASE_PORT         int    `json:"DATABASE_PORT"`
-	DATABASE_USER         string `json:"DATABASE_USER"`
-	DATABASE_PASS         string `json:"DATABASE_PASS"`
-	DATABASE_DB           string `json:"DATABASE_DB"`
-	DATABASE_SSL          bool   `json:"DATABASE_SSL"`
-	STATBASE_HOST         string `json:"STATBASE_HOST"`
-	STATBASE_PORT         int    `json:"STATBASE_PORT"`
-	STATBASE_USER         string `json:"STATBASE_USER"`
-	STATBASE_PASS         string `json:"STATBASE_PASS"`
-	REFRESH_DATABASE_SCAN int    `json:"REFRESH_DATABASE_SCAN"`
-	WORKERS               map[string]int
+	RMQ_HOST              string         `json:"RMQ_HOST"`
+	RMQ_PORT              int            `json:"RMQ_PORT"`
+	RMQ_USER              string         `json:"RMQ_USER"`
+	RMQ_PASS              string         `json:"RMQ_PASS"`
+	RMQ_VHOST             string         `json:"RMQ_VHOST"`
+	DATABASE_HOST         string         `json:"DATABASE_HOST"`
+	DATABASE_PORT         int            `json:"DATABASE_PORT"`
+	DATABASE_USER         string         `json:"DATABASE_USER"`
+	DATABASE_PASS         string         `json:"DATABASE_PASS"`
+	DATABASE_DB           string         `json:"DATABASE_DB"`
+	DATABASE_SSL          bool           `json:"DATABASE_SSL"`
+	STATBASE_HOST         string         `json:"STATBASE_HOST"`
+	STATBASE_PORT         int            `json:"STATBASE_PORT"`
+	STATBASE_USER         string         `json:"STATBASE_USER"`
+	STATBASE_PASS         string         `json:"STATBASE_PASS"`
+	MONGO_RESTORE_HOST    string         `json:"MONGO_RESTORE_HOST"`
+	MONGO_RESTORE_PORT    int            `json:"MONGO_RESTORE_PORT"`
+	REFRESH_DATABASE_SCAN int            `json:"REFRESH_DATABASE_SCAN"`
+	WORKERS               map[string]int `json:"WORKERS_COUNT"`
 	log                   *logging.Logger
 }
 
@@ -103,6 +105,23 @@ func (cc *ShkaffConfig) validate() {
 		cc.STATBASE_PORT = consts.DEFAULT_STATDB_PORT
 	}
 
+	if cc.STATBASE_HOST == "" {
+		log.Printf(consts.INVALID_STATDB_HOST, consts.DEFAULT_HOST)
+		cc.STATBASE_HOST = consts.DEFAULT_HOST
+	}
+	if cc.STATBASE_PORT < 1025 || cc.STATBASE_PORT > 65535 {
+		log.Printf(consts.INVALID_STATDB_PORT, cc.STATBASE_PORT, consts.DEFAULT_STATDB_PORT)
+		cc.STATBASE_PORT = consts.DEFAULT_STATDB_PORT
+	}
+	if cc.MONGO_RESTORE_HOST == "" {
+		log.Printf(consts.INVALID_MONGO_RESTORE_HOST, consts.DEFAULT_HOST)
+		cc.MONGO_RESTORE_HOST = consts.DEFAULT_HOST
+	}
+	if cc.MONGO_RESTORE_PORT < 1025 || cc.MONGO_RESTORE_PORT > 65535 {
+		log.Printf(consts.INVALID_MONGO_RESTORE_PORT, cc.MONGO_RESTORE_PORT, consts.DEFAULT_MONGO_RESTORE_PORT)
+		cc.MONGO_RESTORE_PORT = consts.DEFAULT_STATDB_PORT
+	}
+
 	if cc.REFRESH_DATABASE_SCAN == 0 {
 		cc.REFRESH_DATABASE_SCAN = consts.DEFAULT_REFRESH_DATABASE_SCAN
 	}
@@ -110,8 +129,10 @@ func (cc *ShkaffConfig) validate() {
 		if workersCount > 0 {
 			switch database {
 			case "mongodb":
+				cc.WORKERS[database] = workersCount
 				cc.log.Infof("%s WorkersCount %d", database, workersCount)
 			case "postgresql":
+				cc.WORKERS[database] = workersCount
 				cc.log.Infof("%s WorkersCount %d", database, workersCount)
 			default:
 				cc.log.Fatalf("Unknown Database %s", database)

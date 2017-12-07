@@ -85,7 +85,7 @@ func (oper *operator) taskSender() {
 			}
 			oper.opCache = remove(oper.opCache, numEl)
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 

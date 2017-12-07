@@ -7,9 +7,11 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
+	"shkaff/config"
 	"shkaff/consts"
 	"shkaff/structs"
 	"shkaff/structs/databases"
+	"strconv"
 	"strings"
 )
 
@@ -19,6 +21,7 @@ var (
 )
 
 type MongoParams struct {
+	cfg                    *config.ShkaffConfig
 	host                   string
 	port                   int
 	login                  string
@@ -98,9 +101,12 @@ func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 
 func (mp *MongoParams) Restore(task *structs.Task) (err error) {
 	var stderr bytes.Buffer
+	mp.cfg = config.InitControlConfig()
 	mp.setDBSettings(task)
-	//ONLY FOR TEST
-	cmd := exec.Command("sh", "-c", "mongorestore", "--gzip", "--drop", "--stopOnError")
+	host := mp.cfg.MONGO_RESTORE_HOST
+	port := strconv.Itoa(mp.cfg.MONGO_RESTORE_PORT)
+	cmd := exec.Command("sh", "-c", "mongorestore", "--host", host,
+		"--port", port, "--gzip", "--drop", "--stopOnError")
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())

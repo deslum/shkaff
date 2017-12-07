@@ -6,6 +6,7 @@ const (
 	DEFAULT_DATABASE_PORT         = 5432
 	DEFAULT_AMQP_PORT             = 5672
 	DEFAULT_STATDB_PORT           = 9000
+	DEFAULT_MONGO_RESTORE_PORT    = 27018
 	DEFAULT_DATABASE_DB           = "postgres"
 	DEFAULT_REFRESH_DATABASE_SCAN = 60
 
@@ -22,6 +23,10 @@ const (
 
 	INVALID_STATDB_HOST = "STATDB host in config file is empty. Shkaff set '%s'\n"
 	INVALID_STATDB_PORT = "STATDB port %d in config file invalid. Shkaff set '%d'\n"
+
+	INVALID_MONGO_RESTORE_HOST = "MONGO_RESTORE host in config file is empty. Shkaff set '%s'\n"
+
+	INVALID_MONGO_RESTORE_PORT = "MONGO_RESTORE port %d in config file invalid. Shkaff set '%d'\n"
 
 	RMQ_URI_TEMPLATE  = "amqp://%s:%s@%s:%d/%s"
 	PSQL_URI_TEMPLATE = "postgres://%s:%s@%s:%d/%s?sslmode=disable"

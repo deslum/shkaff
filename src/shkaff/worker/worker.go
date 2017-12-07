@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"shkaff/config"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
@@ -14,11 +15,10 @@ import (
 	"sync"
 )
 
-const WORKERS_COUNT = 10
-
 type workersStarter struct {
-	workerWG sync.WaitGroup
-	workers  []*worker
+	workerWG    sync.WaitGroup
+	workers     []*worker
+	workerCount int
 }
 
 type worker struct {
@@ -30,10 +30,12 @@ type worker struct {
 }
 
 func InitWorker() (ws *workersStarter) {
+	cfg := config.InitControlConfig()
 	ws = new(workersStarter)
+	ws.workerCount = cfg.WORKERS["mongodb"]
 	stat := statsender.Run()
 	ws.workerWG = sync.WaitGroup{}
-	for i := 0; i < WORKERS_COUNT; i++ {
+	for i := 0; i < ws.workerCount; i++ {
 		worker := &worker{
 			databaseName: "mongodb",
 			dumpChan:     make(chan string, 100),
@@ -47,7 +49,7 @@ func InitWorker() (ws *workersStarter) {
 }
 
 func (ws *workersStarter) Run() {
-	ws.workerWG.Add(WORKERS_COUNT)
+	ws.workerWG.Add(ws.workerCount)
 	for _, w := range ws.workers {
 		go w.worker()
 	}
