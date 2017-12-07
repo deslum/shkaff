@@ -13,8 +13,6 @@ import (
 type StatSender struct {
 	sChan    chan structs.StatMessage
 	producer *producer.RMQ
-	consumer *consumer.RMQ
-	statDB   *stat.StatDB
 }
 
 func Run() (statSender *StatSender) {
@@ -22,10 +20,7 @@ func Run() (statSender *StatSender) {
 	statSender = new(StatSender)
 	statSender.sChan = make(chan structs.StatMessage)
 	statSender.producer = producer.InitAMQPProducer("shkaff_stat")
-	statSender.consumer = consumer.InitAMQPConsumer()
-	statSender.statDB = stat.InitStat()
 	go statSender.statSender()
-	go statSender.statWorker()
 	return
 }
 
@@ -79,7 +74,22 @@ func (statSender *StatSender) statSender() {
 	}
 }
 
-func (statSender *StatSender) statWorker() {
+//StatWorker
+
+type statWorker struct {
+	consumer *consumer.RMQ
+	statDB   *stat.StatDB
+}
+
+func InitStatSender() (sw *statWorker) {
+	sw = new(statWorker)
+	sw.statDB = stat.InitStat()
+	sw.consumer = consumer.InitAMQPConsumer()
+	return
+}
+
+func (statSender *statWorker) Run() {
+	log.Println("Start StatWorker")
 	var statMessage structs.StatMessage
 	statSender.consumer.InitConnection("shkaff_stat")
 	for message := range statSender.consumer.Msgs {
