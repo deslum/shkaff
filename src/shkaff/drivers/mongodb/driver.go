@@ -100,7 +100,7 @@ func (mp *MongoParams) Restore(task *structs.Task) (err error) {
 	var stderr bytes.Buffer
 	mp.setDBSettings(task)
 	//ONLY FOR TEST
-	cmd := exec.Command("sh", "-c", "mongorestore --gzip --drop --stopOnError")
+	cmd := exec.Command("sh", "-c", "mongorestore", "--gzip", "--drop", "--stopOnError")
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		log.Println(fmt.Sprint(err) + ": " + stderr.String())

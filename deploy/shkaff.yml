@@ -25,7 +25,7 @@ services:
       - "27017:27017"
     volumes:
       - ./mongodb_test:/opt
-    command: "/opt/restore.sh"
+#    command: "/opt/restore.sh"
 
   RabbitMQ:
       restart: always

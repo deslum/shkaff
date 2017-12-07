@@ -14,6 +14,8 @@ import (
 	"sync"
 )
 
+const WORKERS_COUNT = 10
+
 type workersStarter struct {
 	workerWG sync.WaitGroup
 	workers  []*worker
@@ -31,19 +33,21 @@ func InitWorker() (ws *workersStarter) {
 	ws = new(workersStarter)
 	stat := statsender.Run()
 	ws.workerWG = sync.WaitGroup{}
-	worker := &worker{
-		databaseName: "mongodb",
-		dumpChan:     make(chan string, 100),
-		postgres:     maindb.InitPSQL(),
-		workRabbit:   consumer.InitAMQPConsumer(),
-		stat:         stat,
+	for i := 0; i < WORKERS_COUNT; i++ {
+		worker := &worker{
+			databaseName: "mongodb",
+			dumpChan:     make(chan string, 100),
+			postgres:     maindb.InitPSQL(),
+			workRabbit:   consumer.InitAMQPConsumer(),
+			stat:         stat,
+		}
+		ws.workers = append(ws.workers, worker)
 	}
-	ws.workers = append(ws.workers, worker)
 	return
 }
 
 func (ws *workersStarter) Run() {
-	ws.workerWG.Add(1)
+	ws.workerWG.Add(WORKERS_COUNT)
 	for _, w := range ws.workers {
 		go w.worker()
 	}

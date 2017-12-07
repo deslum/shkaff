@@ -51,7 +51,7 @@ func (qp *RMQ) InitConnection(queueName string) {
 		log.Fatalln(err, "Failed to declare a queue")
 	}
 	if err = qp.Channel.Qos(
-		1,     // prefetch count
+		10,    // prefetch count
 		0,     // prefetch size
 		false, // global
 	); err != nil {

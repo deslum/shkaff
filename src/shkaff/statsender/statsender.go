@@ -98,6 +98,7 @@ func (statSender *statWorker) Run() {
 			log.Println("statWorker", err, "Failed JSON parse")
 			continue
 		}
+		
 		err = statSender.statDB.Insert(statMessage)
 		if err != nil {
 			log.Println("statWorker", err)
