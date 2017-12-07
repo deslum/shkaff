@@ -1,9 +1,0 @@
-  MongoForRestoreDB:
-    restart: always
-    image: mongo:latest
-    environment:
-      - MONGODB_USER=test
-      - MONGODB_DATABASE=test
-      - MONGODB_PASS=test
-    ports:
-      -
