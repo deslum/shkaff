@@ -69,7 +69,6 @@ func (mp *MongoParams) ParamsToDumpString() (commandString string) {
 
 func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
 	var cmdLine []string
-	mp.cfg = config.InitControlConfig()
 	cmdLine = append(cmdLine, "mongorestore")
 	cmdLine = append(cmdLine, fmt.Sprintf("%s %s", consts.MONGO_HOST_KEY, mp.cfg.MONGO_RESTORE_HOST))
 	cmdLine = append(cmdLine, fmt.Sprintf("%s %d", consts.MONGO_PORT_KEY, mp.cfg.MONGO_RESTORE_PORT))
@@ -83,12 +82,6 @@ func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
 	if mp.gzip {
 		cmdLine = append(cmdLine, consts.MONGO_GZIP_KEY)
 	}
-	//	if mp.database != "" {
-	//		cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", consts.MONGO_DATABASE_KEY, mp.database))
-	//		if mp.collection != "" {
-	//			cmdLine = append(cmdLine, fmt.Sprintf("%s=%s", consts.MONGO_COLLECTION_KEY, mp.collection))
-	//		}
-	//	}
 	//	if mp.collection == "" && mp.parallelCollectionsNum > 4 {
 	//		cmdLine = append(cmdLine, fmt.Sprintf("%s=%d", consts.MONGO_PARALLEL_KEY, mp.parallelCollectionsNum))
 	//	}
@@ -101,7 +94,9 @@ func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
 }
 
 func InitDriver() (mp databases.DatabaseDriver) {
-	return &MongoParams{}
+	return &MongoParams{
+		cfg: config.InitControlConfig(),
+	}
 }
 
 func (mp *MongoParams) setDBSettings(task *structs.Task) {
