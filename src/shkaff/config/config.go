@@ -17,6 +17,8 @@ var (
 )
 
 type ShkaffConfig struct {
+	SHKAFF_UI_HOST        string         `"json:SHKAFF_UI_HOST"`
+	SHKAFF_UI_PORT        int            `"json:SHKAFF_UI_PORT"`
 	RMQ_HOST              string         `json:"RMQ_HOST"`
 	RMQ_PORT              int            `json:"RMQ_PORT"`
 	RMQ_USER              string         `json:"RMQ_USER"`
@@ -62,6 +64,13 @@ func InitControlConfig() *ShkaffConfig {
 }
 
 func (cc *ShkaffConfig) validate() {
+	if cc.SHKAFF_UI_HOST == "" {
+		log.Fatalf("Invalid Shkaff UI Host %s", cc.SHKAFF_UI_HOST)
+	}
+	if cc.SHKAFF_UI_PORT < 1025 || cc.SHKAFF_UI_PORT > 65535 {
+		log.Fatalf("Invalid Shkaff UI Port %d", cc.SHKAFF_UI_PORT)
+	}
+
 	if cc.DATABASE_HOST == "" {
 		log.Printf(consts.INVALID_DATABASE_HOST, consts.DEFAULT_HOST)
 		cc.DATABASE_HOST = consts.DEFAULT_HOST

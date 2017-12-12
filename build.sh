@@ -11,4 +11,5 @@ go get github.com/syndtr/goleveldb/leveldb
 go get github.com/op/go-logging
 go get gopkg.in/mgo.v2
 go get github.com/kshvakov/clickhouse
+go get github.com/gin-gonic/gin
 go install "src/shkaff/shkaff.go"

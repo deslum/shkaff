@@ -1,4 +1,6 @@
 {
+	"SHKAFF_UI_HOST":"localhost",
+	"SHKAFF_UI_PORT":8080,
 	"RMQ_HOST": "localhost",
 	"RMQ_PORT": 5672,
 	"RMQ_USER": "shkaff",

@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"shkaff/config"
+	"shkaff/dashboard"
 	"shkaff/fork"
 	"shkaff/operator"
 	"shkaff/statsender"
@@ -27,6 +28,8 @@ func (self *shkaff) Init(action string) (srv Service) {
 		srv = worker.InitWorker()
 	case "StatWorker":
 		srv = statsender.InitStatSender()
+	case "Dashboard":
+		srv = dashboard.InitAPI()
 	default:
 		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
@@ -34,7 +37,7 @@ func (self *shkaff) Init(action string) (srv Service) {
 }
 
 func startShkaff() {
-	servicesName := []string{"Operator", "Worker", "StatWorker"}
+	servicesName := []string{"Operator", "Worker", "StatWorker", "Dashboard"}
 	shkf := new(shkaff)
 	for _, name := range servicesName {
 		s := shkf.Init(name)
