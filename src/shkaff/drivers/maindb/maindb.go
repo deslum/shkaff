@@ -1,10 +1,12 @@
 package maindb
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"shkaff/config"
 	"shkaff/consts"
+	"shkaff/structs"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -27,6 +29,31 @@ func InitPSQL() (ps *PSQL) {
 	ps.RefreshTimeScan = cfg.REFRESH_DATABASE_SCAN
 	if ps.DB, err = sqlx.Connect("postgres", ps.uri); err != nil {
 		log.Fatalln(err)
+	}
+	return
+}
+
+func (ps *PSQL) GetTask(taskId int) (task structs.Task, err error) {
+	err = ps.DB.Get(&task, "SELECT * FROM shkaff.tasks WHERE task_id = $1", taskId)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) UpdateTask(taskId int) (task structs.Task, err error) {
+	task = structs.Task{}
+	// err = ps.DB.Exec("UPDATE FROM shkaff.tasks WHERE task_id = $1", taskId)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) DeleteTask(taskId int) (result sql.Result, err error) {
+	result, err = ps.DB.Exec("DELETE FROM shkaff.tasks WHERE task_id = $1", taskId)
+	if err != nil {
+		return
 	}
 	return
 }
