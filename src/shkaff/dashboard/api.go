@@ -8,31 +8,30 @@ import (
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/stat"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-type PostTask struct {
-	TaskName    string    `json:"task_name" db:"task_name"`
-	Verb        int       `json:"verb" db:"verb"`
-	ThreadCount int       `json:"thread_count" db:"thread_count"`
-	Gzip        bool      `json:"gzip" db:"gzip"`
-	Ipv6        bool      `json:"ipv6" db:"ipv6"`
-	Host        string    `json:"host" db:"host"`
-	Port        int       `json:"port" db:"port"`
-	StartTime   time.Time `json:"start_time" db:"start_time"`
-	DBUser      string    `json:"db_user" db:"db_user"`
-	DBPassword  string    `json:"db_password" db:"db_password"`
-	Database    string    `json:"database"`
-	Sheet       string    `json:"sheet"`
-}
+// type PostTask struct {
+// 	TaskName    string    `json:"task_name" db:"task_name"`
+// 	Verb        int       `json:"verb" db:"verb"`
+// 	ThreadCount int       `json:"thread_count" db:"thread_count"`
+// 	Gzip        bool      `json:"gzip" db:"gzip"`
+// 	Ipv6        bool      `json:"ipv6" db:"ipv6"`
+// 	Host        string    `json:"host" db:"host"`
+// 	Port        int       `json:"port" db:"port"`
+// 	StartTime   time.Time `json:"start_time" db:"start_time"`
+// 	DBUser      string    `json:"db_user" db:"db_user"`
+// 	DBPassword  string    `json:"db_password" db:"db_password"`
+// 	Database    string    `json:"database"`
+// 	Sheet       string    `json:"sheet"`
+// }
 
 type API struct {
 	cfg    *config.ShkaffConfig
 	report *stat.StatDB
 	router *gin.Engine
-	sql    *maindb.PSQL
+	psql   *maindb.PSQL
 }
 
 func InitAPI() (api *API) {
@@ -40,7 +39,7 @@ func InitAPI() (api *API) {
 		cfg:    config.InitControlConfig(),
 		router: gin.Default(),
 		report: stat.InitStat(),
-		sql:    maindb.InitPSQL(),
+		psql:   maindb.InitPSQL(),
 	}
 	v1 := api.router.Group("/api/v1")
 	//CRUD Operation with Tasks
@@ -52,7 +51,7 @@ func InitAPI() (api *API) {
 	}
 	//Statistic
 	{
-		v1.GET("/GetStat/:TaskId", api.getStat)
+		v1.GET("/GetStat/:TaskID", api.getTaskStat)
 	}
 
 	return
@@ -75,11 +74,17 @@ func (api *API) createTask(c *gin.Context) {
 }
 
 func (api *API) updateTask(c *gin.Context) {
-	task, err := api.checkUpdateParameters(c)
+	sqlString, err := api.checkUpdateParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, task)
+	_, err = api.psql.UpdateTask(sqlString)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Status": "OK"})
 	return
 }
 
@@ -90,7 +95,7 @@ func (api *API) getTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
 		return
 	}
-	task, err := api.sql.GetTask(taskIDInt)
+	task, err := api.psql.GetTask(taskIDInt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
@@ -106,7 +111,7 @@ func (api *API) deleteTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
 		return
 	}
-	_, err = api.sql.DeleteTask(taskIDInt)
+	_, err = api.psql.DeleteTask(taskIDInt)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
@@ -115,8 +120,19 @@ func (api *API) deleteTask(c *gin.Context) {
 	return
 }
 
-func (api *API) getStat(c *gin.Context) {
-	res := []string{"Message", "Its works"}
-	c.JSON(http.StatusOK, res)
+func (api *API) getTaskStat(c *gin.Context) {
+	taskID := c.Param("TaskID")
+	_, err := strconv.Atoi(taskID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
+		return
+	}
+	task, err := api.report.StandartStatSelect()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, task)
 	return
+
 }

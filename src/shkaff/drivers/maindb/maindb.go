@@ -41,9 +41,17 @@ func (ps *PSQL) GetTask(taskId int) (task structs.Task, err error) {
 	return
 }
 
-func (ps *PSQL) UpdateTask(taskId int) (task structs.Task, err error) {
-	task = structs.Task{}
-	// err = ps.DB.Exec("UPDATE FROM shkaff.tasks WHERE task_id = $1", taskId)
+func (ps *PSQL) GetLastTaskID() (id int, err error) {
+	err = ps.DB.Get(id, "SELECT Count(*) FROM shkaff.tasks")
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) UpdateTask(sqlString string) (result sql.Result, err error) {
+	log.Println(sqlString)
+	result, err = ps.DB.Exec(sqlString)
 	if err != nil {
 		return
 	}

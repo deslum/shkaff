@@ -3,22 +3,23 @@ package dashboard
 import (
 	"errors"
 	"fmt"
-	"shkaff/structs"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (api *API) checkUpdateParameters(c *gin.Context) (task structs.Task, err error) {
+func (api *API) checkUpdateParameters(c *gin.Context) (sqlString string, err error) {
+	var errStr, setString string
+	var setList []string
 	var taskUpdate map[string]string
-	var errStr string
 	taskID := c.Param("TaskID")
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
 		return
 	}
-	task, err = api.sql.GetTask(taskIDInt)
+	_, err = api.psql.GetTask(taskIDInt)
 	if err != nil {
 		return
 	}
@@ -28,67 +29,145 @@ func (api *API) checkUpdateParameters(c *gin.Context) (task structs.Task, err er
 		case "task_name":
 			if val == "" {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.TaskName = val
+			setString = fmt.Sprintf("%s='%s'", key, val)
 		case "host":
 			if val == "" {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.Host = val
+			setString = fmt.Sprintf("%s='%s'", key, val)
 		case "port":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt < 1024 && valInt > 65565 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.Port = valInt
+			setString = fmt.Sprintf("%s='%s'", key, val)
 		case "verb":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 6 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.Verb = valInt
 		case "thread_count":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 10 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.ThreadCount = valInt
+			setString = fmt.Sprintf("%s=%d", key, valInt)
 		case "gzip":
-			valBool, err := strconv.ParseBool(val)
+			_, err := strconv.ParseBool(val)
 			if err != nil {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.Gzip = valBool
+			setString = fmt.Sprintf("%s=%s", key, val)
 		case "ipv6":
-			valBool, err := strconv.ParseBool(val)
+			_, err := strconv.ParseBool(val)
 			if err != nil {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				return "", errors.New(errStr)
 			}
-			task.Ipv6 = valBool
+			setString = fmt.Sprintf("%s=%s", key, val)
 		case "start_time":
-			layout := "2006-01-02T15:04:05.000Z"
+			layout := "2006-01-02 15:04:00"
 			tm, err := time.Parse(layout, val)
 			if err != nil {
-				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return task, errors.New(errStr)
+				errStr = fmt.Sprintf("Bad %s %s", key, tm.String())
+				return "", errors.New(errStr)
 			}
-			task.StartTime = tm
-		case "db_user":
-			task.DBUser = val
-		case "db_password":
-			task.DBPassword = val
-		case "database":
-			task.Sheet = val
-		case "sheet":
-			task.Database = val
+			setString = fmt.Sprintf("%s=to_timestamp(%d)", key, tm.Unix())
+		case "db_user", "db_password", "database", "sheet":
+			setString = fmt.Sprintf("%s='%s'", key, val)
+		default:
+			errStr = fmt.Sprintf("Bad field %s", key)
+			return "", errors.New(errStr)
 		}
+		setList = append(setList, setString)
 	}
+	setStrings := strings.Join(setList, ",")
+	sqlString = fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
 	return
 }
+
+// func (api *API) checkCreateParameters(c *gin.Context) (sqlString string, err error) {
+// 	var errStr, setString string
+// 	var setList []string
+// 	var taskUpdate map[string]string
+// 	task_id, err := api.psql.GetLastTaskID()
+// 	if err != nil {
+// 		return
+// 	}
+// 	task_id++
+// 	c.BindJSON(&taskUpdate)
+// 	for key, val := range taskUpdate {
+// 		switch key {
+// 		case "task_name":
+// 			if val == "" {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s='%s'", key, val)
+// 		case "host":
+// 			if val == "" {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s='%s'", key, val)
+// 		case "port":
+// 			valInt, err := strconv.Atoi(val)
+// 			if err != nil || valInt < 1024 && valInt > 65565 {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s='%s'", key, val)
+// 		case "verb":
+// 			valInt, err := strconv.Atoi(val)
+// 			if err != nil || valInt > 6 {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 		case "thread_count":
+// 			valInt, err := strconv.Atoi(val)
+// 			if err != nil || valInt > 10 {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s=%d", key, valInt)
+// 		case "gzip":
+// 			_, err := strconv.ParseBool(val)
+// 			if err != nil {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s=%s", key, val)
+// 		case "ipv6":
+// 			_, err := strconv.ParseBool(val)
+// 			if err != nil {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, val)
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s=%s", key, val)
+// 		case "start_time":
+// 			layout := "2006-01-02 15:04:00"
+// 			tm, err := time.Parse(layout, val)
+// 			if err != nil {
+// 				errStr = fmt.Sprintf("Bad %s %s", key, tm.String())
+// 				return "", errors.New(errStr)
+// 			}
+// 			setString = fmt.Sprintf("%s=to_timestamp(%d)", key, tm.Unix())
+// 		case "db_user", "db_password", "database", "sheet":
+// 			setString = fmt.Sprintf("%s='%s'", key, val)
+// 		default:
+// 			errStr = fmt.Sprintf("Bad field %s", key)
+// 			return "", errors.New(errStr)
+// 		}
+// 		setList = append(setList, setString)
+// 	}
+// 	setStrings := strings.Join(setList, ",")
+// 	sqlString = fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
+// 	return
+// }

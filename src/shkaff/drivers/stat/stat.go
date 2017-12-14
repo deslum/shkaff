@@ -1,7 +1,6 @@
 package stat
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"shkaff/config"
@@ -9,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	_ "github.com/kshvakov/clickhouse"
 )
 
@@ -16,13 +16,14 @@ const (
 	URI_TEMPLATE   = "tcp://%s:%d?debug=False"
 	CHECKOUT_TIME  = 15
 	INSERT_REQUEST = "INSERT INTO shkaff_stat (UserId, DbID, TaskId, NewOperator, SuccessOperator, FailOperator, ErrorOperator, NewDump, SuccessDump, FailDump, ErrorDump, NewRestore, SuccessRestore, FailRestore, ErrorRestore, CreateDate) VALUES (:UserId, :DbID, :TaskId, :NewOperator, :SuccessOperator, :FailOperator, :ErrorOperator, :NewDump, :SuccessDump, :FailDump, :ErrorDump, :NewRestore, :SuccessRestore, :FailRestore, :ErrorRestore, :CreateDate)"
+	SELECT_REQUEST = "SELECT UserId, DbID, TaskId, sum(NewOperator), sum(SuccessOperator), sum(FailOperator), sum(NewDump), sum(SuccessDump), sum(FailDump), sum(NewRestore), sum(SuccessRestore), sum(FailRestore) FROM shkaff_stat GROUP BY UserId, DbID, TaskId"
 )
 
 type StatDB struct {
 	mutex           sync.Mutex
 	uri             string
 	statMessageList []structs.StatMessage
-	DB              *sql.DB
+	DB              *sqlx.DB
 }
 
 func InitStat() (s *StatDB) {
@@ -31,7 +32,7 @@ func InitStat() (s *StatDB) {
 	s = new(StatDB)
 	s.mutex = sync.Mutex{}
 	s.uri = fmt.Sprintf(URI_TEMPLATE, cfg.STATBASE_HOST, cfg.STATBASE_PORT)
-	if s.DB, err = sql.Open("clickhouse", s.uri); err != nil {
+	if s.DB, err = sqlx.Open("clickhouse", s.uri); err != nil {
 		log.Fatalln(err)
 	}
 	go s.checkout()
@@ -82,6 +83,32 @@ func (s *StatDB) inserBulk() {
 		log.Println(err)
 	}
 	s.dropList()
+}
+
+//TODO Refactoring Very Ugly
+func (s *StatDB) StandartStatSelect() (result map[string]interface{}, err error) {
+	var row *sqlx.Row
+	var columns []string
+	row = s.DB.QueryRowx(SELECT_REQUEST)
+	columns, err = row.Columns()
+	if err != nil {
+		return
+	}
+	res := make([]interface{}, len(columns))
+	resP := make([]interface{}, len(columns))
+	for i, _ := range columns {
+		resP[i] = &res[i]
+	}
+	err = row.Scan(resP...)
+	if err != nil {
+		return
+	}
+	result = make(map[string]interface{})
+	for i, colName := range columns {
+		val := resP[i].(*interface{})
+		result[colName] = *val
+	}
+	return
 }
 
 func (s *StatDB) dropList() {
