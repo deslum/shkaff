@@ -42,7 +42,6 @@ func (oper *operator) Run() {
 
 func (oper *operator) taskSender() {
 	var messages []structs.Task
-	db := oper.postgres.DB
 	rabbit := oper.rabbit
 	for task := range oper.tasksChan {
 		switch dbType := task.DBType; dbType {
@@ -62,10 +61,6 @@ func (oper *operator) taskSender() {
 				log.Println("Publish", err)
 				continue
 			}
-		}
-		if _, err := db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, task.TaskID); err != nil {
-			log.Fatalln(err)
-			continue
 		}
 	}
 }

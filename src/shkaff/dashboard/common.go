@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (api *API) checkUpdateParameters(c *gin.Context) (sqlString string, err error) {
+func (api *API) checkParameters(c *gin.Context) (taskIDInt int, setStrings string, err error) {
 	var errStr, setString string
 	var setList []string
 	var taskUpdate map[string]string
 	taskID := c.Param("TaskID")
-	taskIDInt, err := strconv.Atoi(taskID)
+	taskIDInt, err = strconv.Atoi(taskID)
 	if err != nil {
 		return
 	}
@@ -29,34 +29,34 @@ func (api *API) checkUpdateParameters(c *gin.Context) (sqlString string, err err
 		case "task_name":
 			if val == "" {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return 0, "", errors.New(errStr)
 			}
 			setString = fmt.Sprintf("%s='%s'", key, val)
 		case "verb":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 6 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return 0, "", errors.New(errStr)
 			}
 		case "thread_count":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 10 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return 0, "", errors.New(errStr)
 			}
 			setString = fmt.Sprintf("%s=%d", key, valInt)
 		case "gzip":
 			_, err := strconv.ParseBool(val)
 			if err != nil {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return 0, "", errors.New(errStr)
 			}
 			setString = fmt.Sprintf("%s=%s", key, val)
 		case "ipv6":
 			_, err := strconv.ParseBool(val)
 			if err != nil {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return 0, "", errors.New(errStr)
 			}
 			setString = fmt.Sprintf("%s=%s", key, val)
 		case "months":
@@ -66,11 +66,11 @@ func (api *API) checkUpdateParameters(c *gin.Context) (sqlString string, err err
 					valInt, err := strconv.Atoi(valStr)
 					if err != nil {
 						errStr = fmt.Sprintf("Bad %s %s", key, val)
-						return "", errors.New(errStr)
+						return 0, "", errors.New(errStr)
 					}
 					if valInt < 1 || valInt > 12 {
 						errStr = fmt.Sprintf("Bad %s %s", key, val)
-						return "", errors.New(errStr)
+						return 0, "", errors.New(errStr)
 					}
 				}
 				setString = fmt.Sprintf("%s=ARRAY[%s]", key, val)
@@ -82,12 +82,11 @@ func (api *API) checkUpdateParameters(c *gin.Context) (sqlString string, err err
 			setString = fmt.Sprintf("%s='%s'", key, val)
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)
-			return "", errors.New(errStr)
+			return 0, "", errors.New(errStr)
 		}
 		setList = append(setList, setString)
 	}
-	setStrings := strings.Join(setList, ",")
-	sqlString = fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
+	setStrings = strings.Join(setList, ",")
 	return
 }
 

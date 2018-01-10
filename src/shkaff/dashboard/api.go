@@ -74,12 +74,12 @@ func (api *API) createTask(c *gin.Context) {
 }
 
 func (api *API) updateTask(c *gin.Context) {
-	sqlString, err := api.checkUpdateParameters(c)
+	taskIDInt, setString, err := api.checkParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	_, err = api.psql.UpdateTask(sqlString)
+	_, err = api.psql.UpdateTask(taskIDInt, setString)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return

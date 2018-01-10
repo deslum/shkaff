@@ -2,7 +2,7 @@ package maindb
 
 import (
 	"database/sql"
-	"encoding/json"
+
 	"fmt"
 	"log"
 	"shkaff/config"
@@ -34,12 +34,27 @@ func InitPSQL() (ps *PSQL) {
 	return
 }
 
-func (ps *PSQL) GetTask(taskId int) (task structs.APITask, err error) {
-	var arr []uint8
-	err = ps.DB.Get(&task, "SELECT * FROM shkaff.tasks WHERE task_id = $1", taskId)
 
-	json.Unmarshal(task.Months, &arr)
-	log.Println(arr)
+
+
+func (ps *PSQL) GetTask(taskId int) (task structs.APITask, err error) {
+
+	err = ps.DB.Get(&task, `SELECT 
+		task_id,
+		task_name,
+		is_active,
+		db_id,
+		databases,
+		"verbose",
+		thread_count,
+		gzip,
+		ipv6,
+		array_to_string(months, ',', '') as months,
+		array_to_string(days, ',', '') as days,
+		array_to_string(hours, ',', '') as hours,
+		minutes 
+	FROM shkaff.tasks 
+    WHERE task_id = $1`, taskId)
 	if err != nil {
 		return
 	}
@@ -54,8 +69,8 @@ func (ps *PSQL) GetLastTaskID() (id int, err error) {
 	return
 }
 
-func (ps *PSQL) UpdateTask(sqlString string) (result sql.Result, err error) {
-	log.Println(sqlString)
+func (ps *PSQL) UpdateTask(taskIDInt int, setStrings string) (result sql.Result, err error) {
+	sqlString := fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
 	result, err = ps.DB.Exec(sqlString)
 	if err != nil {
 		return

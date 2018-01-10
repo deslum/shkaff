@@ -60,10 +60,10 @@ type APITask struct {
 	ThreadCount int         `db:"thread_count"`
 	Gzip        bool        `db:"gzip"`
 	Ipv6        bool        `db:"ipv6"`
-	Months      []byte      `json:"months" db:"months"`
-	Days        interface{} `db:"days"`
-	Hours       interface{} `db:"hours"`
-	Minutes     interface{} `db:"minutes"`
+	Months      string      `db:"months"`
+	Days        string `db:"days"`
+	Hours       string `db:"hours"`
+	Minutes     string `db:"minutes"`
 }
 
 type StatMessage struct {
