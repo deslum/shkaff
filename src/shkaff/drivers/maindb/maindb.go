@@ -2,6 +2,7 @@ package maindb
 
 import (
 	"database/sql"
+	"strings"
 
 	"fmt"
 	"log"
@@ -34,12 +35,12 @@ func InitPSQL() (ps *PSQL) {
 	return
 }
 
-
-
-
-func (ps *PSQL) GetTask(taskId int) (task structs.APITask, err error) {
-
-	err = ps.DB.Get(&task, `SELECT 
+func (ps *PSQL) GetTask(taskId int, isSimple bool) (task structs.APITask, err error) {
+	var requestString string
+	if isSimple {
+		requestString = `SELECT * FROM shkaff.tasks WHERE task_id = $1`
+	} else {
+		requestString = `SELECT 
 		task_id,
 		task_name,
 		is_active,
@@ -54,7 +55,9 @@ func (ps *PSQL) GetTask(taskId int) (task structs.APITask, err error) {
 		array_to_string(hours, ',', '') as hours,
 		minutes 
 	FROM shkaff.tasks 
-    WHERE task_id = $1`, taskId)
+    WHERE task_id = $1`
+	}
+	err = ps.DB.Get(&task, requestString, taskId)
 	if err != nil {
 		return
 	}
@@ -69,18 +72,54 @@ func (ps *PSQL) GetLastTaskID() (id int, err error) {
 	return
 }
 
-func (ps *PSQL) CreateTask(setStrings string) (result sql.Result, err error) {
-	sqlString := fmt.Sprintf("CREATE shkaff.tasks SET %s", setStrings)
-	result, err = ps.DB.Exec(sqlString)
+func (ps *PSQL) GetTaskByName(taskName string) (task structs.APITask, err error) {
+	requestString := `SELECT 
+		task_id,
+		task_name,
+		is_active,
+		db_id,
+		databases,
+		"verbose",
+		thread_count,
+		gzip,
+		ipv6,
+		array_to_string(months, ',', '') as months,
+		array_to_string(days, ',', '') as days,
+		array_to_string(hours, ',', '') as hours,
+		minutes 
+	FROM shkaff.tasks 
+    WHERE task_name = $1`
+	err = ps.DB.Get(&task, requestString, taskName)
 	if err != nil {
 		return
 	}
 	return
 }
 
-func (ps *PSQL) UpdateTask(taskIDInt int, setStrings string) (result sql.Result, err error) {
-	sqlString := fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
-	result, err = ps.DB.Exec(sqlString)
+func (ps *PSQL) CreateTask(setStrings map[string]interface{}) (result sql.Result, err error) {
+	var keys, dottedKeys []string
+	for key := range setStrings {
+		keys = append(keys, key)
+		dottedKeys = append(dottedKeys, ":"+key)
+	}
+	cols := strings.Join(keys, ",")
+	dottedCols := strings.Join(dottedKeys, ",")
+	sqlString := fmt.Sprintf("INSERT INTO shkaff.tasks (%s) VALUES (%s)", cols, dottedCols)
+	result, err = ps.DB.NamedExec(sqlString, setStrings)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) UpdateTask(taskIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
+	var keys []string
+	for key := range setStrings {
+		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+	}
+	cols := strings.Join(keys, ",")
+	sqlString := fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", cols, taskIDInt)
+	result, err = ps.DB.NamedExec(sqlString, setStrings)
 	if err != nil {
 		return
 	}

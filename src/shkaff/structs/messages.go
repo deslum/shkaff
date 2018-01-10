@@ -51,16 +51,16 @@ type Task struct {
 }
 
 type APITask struct {
-	TaskID      int         `db:"task_id"`
-	TaskName    string      `db:"task_name"`
-	IsActive    bool        `db:"is_active"`
-	DBID        int         `db:"db_id"`
-	Databases   string      `db:"databases"`
-	Verb        int         `db:"verbose"`
-	ThreadCount int         `db:"thread_count"`
-	Gzip        bool        `db:"gzip"`
-	Ipv6        bool        `db:"ipv6"`
-	Months      string      `db:"months"`
+	TaskID      int    `db:"task_id"`
+	TaskName    string `db:"task_name"`
+	IsActive    bool   `db:"is_active"`
+	DBID        int    `db:"db_id"`
+	Databases   string `db:"databases"`
+	Verb        int    `db:"verbose"`
+	ThreadCount int    `db:"thread_count"`
+	Gzip        bool   `db:"gzip"`
+	Ipv6        bool   `db:"ipv6"`
+	Months      string `db:"months"`
 	Days        string `db:"days"`
 	Hours       string `db:"hours"`
 	Minutes     string `db:"minutes"`

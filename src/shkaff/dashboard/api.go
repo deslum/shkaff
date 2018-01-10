@@ -44,7 +44,7 @@ func InitAPI() (api *API) {
 	v1 := api.router.Group("/api/v1")
 	//CRUD Operation with Tasks
 	{
-		v1.PUT("/CreateTask", api.createTask)
+		v1.POST("/CreateTask", api.createTask)
 		v1.POST("/UpdateTask/:TaskID", api.updateTask)
 		v1.GET("/GetTask/:TaskID", api.getTask)
 		v1.DELETE("/DeleteTask/:TaskID", api.deleteTask)
@@ -78,7 +78,18 @@ func (api *API) createTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"Status": "OK"})
+	taskName := setStrings["task_name"].(string)
+	if taskName == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	task, err := api.psql.GetTaskByName(taskName)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
+		return
+	}
+	c.JSON(http.StatusOK, task)
 	return
 }
 
@@ -89,9 +100,9 @@ func (api *API) updateTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	_, err = api.psql.GetTask(taskIDInt)
+	_, err = api.psql.GetTask(taskIDInt, true)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}
 	setStrings, err := api.checkParameters(c)
@@ -115,7 +126,7 @@ func (api *API) getTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
 		return
 	}
-	task, err := api.psql.GetTask(taskIDInt)
+	task, err := api.psql.GetTask(taskIDInt, false)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
@@ -130,6 +141,11 @@ func (api *API) deleteTask(c *gin.Context) {
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
+		return
+	}
+	_, err = api.psql.GetTask(taskIDInt, true)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}
 	_, err = api.psql.DeleteTask(taskIDInt)

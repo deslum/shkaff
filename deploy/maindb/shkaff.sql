@@ -56,7 +56,7 @@ CREATE SEQUENCE shkaff.tasks_seq;
 
 CREATE TABLE IF NOT EXISTS shkaff.tasks (
   task_id SMALLINT NOT NULL DEFAULT NEXTVAL ('shkaff.tasks_seq'),
-  task_name VARCHAR(32) NULL,
+  task_name VARCHAR(32) NOT NULL,
   "verbose" SMALLINT NOT NULL DEFAULT 1,
   is_active boolean NOT NULL DEFAULT false,
   thread_count SMALLINT NULL DEFAULT 4,
@@ -64,12 +64,13 @@ CREATE TABLE IF NOT EXISTS shkaff.tasks (
   databases TEXT[] NOT NULL DEFAULT '{}',
   gzip BOOLEAN NOT NULL DEFAULT true,
   db_id SMALLINT NOT NULL,
-  months INTEGER[12] NOT NULL DEFAULT '{1,2,3}',
-  days INTEGER[31] NOT NULL DEFAULT '{9,10,11,12,13}',
-  hours INTEGER[24] NOT NULL DEFAULT '{1,2}',
+  months INTEGER[12] NOT NULL DEFAULT '{}',
+  days INTEGER[31] NOT NULL DEFAULT '{}',
+  hours INTEGER[24] NOT NULL DEFAULT '{}',
   minutes SMALLINT NOT NULL,
   PRIMARY KEY (task_id),
   CONSTRAINT task_id_UNIQUE UNIQUE  (task_id),
+  CONSTRAINT task_name_UNIQUE UNIQUE (task_name),
   CONSTRAINT fk_tasks_db_settings1
     FOREIGN KEY (db_id)
     REFERENCES shkaff.db_settings (db_id)

@@ -3,53 +3,47 @@ package dashboard
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (api *API) checkParameters(c *gin.Context) (setStrings string, err error) {
+func (api *API) checkParameters(c *gin.Context) (setStrings map[string]interface{}, err error) {
 	var errStr, setString string
 	var setList []string
 	var taskUpdate map[string]string
+	setStrings = make(map[string]interface{})
 	c.BindJSON(&taskUpdate)
 	for key, val := range taskUpdate {
 		switch key {
 		case "task_name":
 			if val == "" {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return nil, errors.New(errStr)
 			}
-			setString = fmt.Sprintf("%s='%s'", key, val)
+			setStrings[key] = val
 		case "verb":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 6 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return nil, errors.New(errStr)
 			}
+			setStrings[key] = valInt
 		case "thread_count":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt > 10 {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return nil, errors.New(errStr)
 			}
-			setString = fmt.Sprintf("%s=%d", key, valInt)
-		case "gzip":
+			setStrings[key] = val
+		case "gzip", "ipv6", "is_active":
 			_, err := strconv.ParseBool(val)
 			if err != nil {
 				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
+				return nil, errors.New(errStr)
 			}
-			setString = fmt.Sprintf("%s=%s", key, val)
-		case "ipv6":
-			_, err := strconv.ParseBool(val)
-			if err != nil {
-				errStr = fmt.Sprintf("Bad %s %s", key, val)
-				return "", errors.New(errStr)
-			}
-			setString = fmt.Sprintf("%s=%s", key, val)
+			setStrings[key] = val
 		case "months":
 			if len(val) > 0 {
 				strVals := strings.Split(val, ",")
@@ -57,27 +51,77 @@ func (api *API) checkParameters(c *gin.Context) (setStrings string, err error) {
 					valInt, err := strconv.Atoi(valStr)
 					if err != nil {
 						errStr = fmt.Sprintf("Bad %s %s", key, val)
-						return "", errors.New(errStr)
+						return nil, errors.New(errStr)
 					}
 					if valInt < 1 || valInt > 12 {
 						errStr = fmt.Sprintf("Bad %s %s", key, val)
-						return "", errors.New(errStr)
+						return nil, errors.New(errStr)
 					}
 				}
-				setString = fmt.Sprintf("%s=ARRAY[%s]", key, val)
+				setStrings[key] = val
 			} else {
-				setString = fmt.Sprintf("%s='{}'", key)
+				setStrings[key] = "{}"
 			}
-			log.Println(setString)
+		//TODO 28 in Febrary and 30th and 31th in any months
+		case "days":
+			if len(val) > 0 {
+				strVals := strings.Split(val, ",")
+				for _, valStr := range strVals {
+					valInt, err := strconv.Atoi(valStr)
+					if err != nil {
+						errStr = fmt.Sprintf("Bad %s %s", key, val)
+						return nil, errors.New(errStr)
+					}
+					if valInt < 1 || valInt > 31 {
+						errStr = fmt.Sprintf("Bad %s %s", key, val)
+						return nil, errors.New(errStr)
+					}
+				}
+				setStrings[key] = val
+			} else {
+				setStrings[key] = "{}"
+			}
+		case "hours":
+			if len(val) > 0 {
+				strVals := strings.Split(val, ",")
+				for _, valStr := range strVals {
+					valInt, err := strconv.Atoi(valStr)
+					if err != nil {
+						errStr = fmt.Sprintf("Bad %s %s", key, val)
+						return nil, errors.New(errStr)
+					}
+					if valInt < 0 || valInt > 23 {
+						errStr = fmt.Sprintf("Bad %s %s", key, val)
+						return nil, errors.New(errStr)
+					}
+				}
+				setStrings[key] = val
+			} else {
+				setStrings[key] = "{}"
+			}
+		case "minutes":
+			valInt, err := strconv.Atoi(val)
+			if err != nil || valInt < 0 || valInt > 60 {
+				errStr = fmt.Sprintf("Bad %s %s", key, val)
+				return nil, errors.New(errStr)
+			}
+			setStrings[key] = valInt
+		//TODO Check if database exist
+		case "db_id":
+			valInt, err := strconv.Atoi(val)
+			if err != nil {
+				errStr = fmt.Sprintf("Bad %s %s", key, val)
+				return nil, errors.New(errStr)
+			}
+			setStrings[key] = valInt
 		case "database":
-			setString = fmt.Sprintf("%s='%s'", key, val)
+			setStrings[key] = val
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)
-			return "", errors.New(errStr)
+			return nil, errors.New(errStr)
 		}
 		setList = append(setList, setString)
 	}
-	setStrings = strings.Join(setList, ",")
 	return
 }
 
