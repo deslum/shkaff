@@ -2,6 +2,7 @@ package maindb
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"shkaff/config"
@@ -33,8 +34,12 @@ func InitPSQL() (ps *PSQL) {
 	return
 }
 
-func (ps *PSQL) GetTask(taskId int) (task structs.Task, err error) {
+func (ps *PSQL) GetTask(taskId int) (task structs.APITask, err error) {
+	var arr []uint8
 	err = ps.DB.Get(&task, "SELECT * FROM shkaff.tasks WHERE task_id = $1", taskId)
+
+	json.Unmarshal(task.Months, &arr)
+	log.Println(arr)
 	if err != nil {
 		return
 	}

@@ -29,26 +29,41 @@ const (
 )
 
 type Task struct {
-	DBSettingsType int       `json:"-" db:"db_settings_type"`
-	DBSettingsID   int       `json:"-" db:"db_settings_id"`
-	IsActive       bool      `json:"-" db:"is_active"`
-	TaskID         int       `json:"task_id" db:"task_id"`
-	TaskName       string    `json:"task_name" db:"task_name"`
-	DBID           int       `json:"db_id" db:"db_id"`
-	UserID         int       `json:"user_id" db:"user_id"`
-	Databases      string    `json:"-" db:"databases"`
-	DBType         string    `json:"-" db:"db_type"`
-	Verb           int       `json:"verb" db:"verb"`
-	ThreadCount    int       `json:"thread_count" db:"thread_count"`
-	Gzip           bool      `json:"gzip" db:"gzip"`
-	Ipv6           bool      `json:"ipv6" db:"ipv6"`
-	Host           string    `json:"host" db:"host"`
-	Port           int       `json:"port" db:"port"`
-	StartTime      time.Time `json:"start_time" db:"start_time"`
-	DBUser         string    `json:"db_user" db:"db_user"`
-	DBPassword     string    `json:"db_password" db:"db_password"`
-	Database       string    `json:"database"`
-	Sheet          string    `json:"sheet"`
+	DBSettingsType int    `json:"-" db:"type_id"`
+	DBSettingsID   int    `json:"-" db:"db_settings_id"`
+	IsActive       bool   `json:"-" db:"is_active"`
+	TaskID         int    `json:"task_id" db:"task_id"`
+	TaskName       string `json:"task_name" db:"task_name"`
+	DBID           int    `json:"db_id" db:"db_id"`
+	UserID         int    `json:"user_id" db:"user_id"`
+	Databases      string `json:"-" db:"databases"`
+	DBType         string `json:"-" db:"db_type"`
+	Verb           int    `json:"verb" db:"verbose"`
+	ThreadCount    int    `json:"thread_count" db:"thread_count"`
+	Gzip           bool   `json:"gzip" db:"gzip"`
+	Ipv6           bool   `json:"ipv6" db:"ipv6"`
+	Host           string `json:"host" db:"host"`
+	Port           int    `json:"port" db:"port"`
+	DBUser         string `json:"db_user" db:"db_user"`
+	DBPassword     string `json:"db_password" db:"db_password"`
+	Database       string `json:"database"`
+	Sheet          string `json:"sheet"`
+}
+
+type APITask struct {
+	TaskID      int         `db:"task_id"`
+	TaskName    string      `db:"task_name"`
+	IsActive    bool        `db:"is_active"`
+	DBID        int         `db:"db_id"`
+	Databases   string      `db:"databases"`
+	Verb        int         `db:"verbose"`
+	ThreadCount int         `db:"thread_count"`
+	Gzip        bool        `db:"gzip"`
+	Ipv6        bool        `db:"ipv6"`
+	Months      []byte      `json:"months" db:"months"`
+	Days        interface{} `db:"days"`
+	Hours       interface{} `db:"hours"`
+	Minutes     interface{} `db:"minutes"`
 }
 
 type StatMessage struct {

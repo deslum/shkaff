@@ -64,9 +64,9 @@ CREATE TABLE IF NOT EXISTS shkaff.tasks (
   databases TEXT[] NOT NULL DEFAULT '{}',
   gzip BOOLEAN NOT NULL DEFAULT true,
   db_id SMALLINT NOT NULL,
-  months INTEGER[12] NOT NULL DEFAULT '{}',
-  days INTEGER[31] NOT NULL DEFAULT '{}',
-  hours INTEGER[24] NOT NULL,
+  months INTEGER[12] NULL,
+  days INTEGER[31] NULL,
+  hours INTEGER[24] NULL,
   minutes SMALLINT NOT NULL,
   PRIMARY KEY (task_id),
   CONSTRAINT task_id_UNIQUE UNIQUE  (task_id),
@@ -116,12 +116,10 @@ INSERT INTO shkaff.tasks (
     db_id,
     is_active,
     task_name,
-    hours,
     minutes)
 VALUES (
     1,
     true,
     'FirstTask',
-    '{10}',
     20
 );

@@ -16,7 +16,7 @@ import (
 )
 
 type operator struct {
-	opCache    []structs.Task
+	tasksChan  chan structs.Task
 	operatorWG sync.WaitGroup
 	postgres   *maindb.PSQL
 	rabbit     *producer.RMQ
@@ -24,8 +24,9 @@ type operator struct {
 
 func InitOperator() (oper *operator) {
 	oper = &operator{
-		postgres: maindb.InitPSQL(),
-		rabbit:   producer.InitAMQPProducer("mongodb"),
+		postgres:  maindb.InitPSQL(),
+		rabbit:    producer.InitAMQPProducer("mongodb"),
+		tasksChan: make(chan structs.Task),
 	}
 	return
 }
@@ -39,66 +40,46 @@ func (oper *operator) Run() {
 	oper.operatorWG.Wait()
 }
 
-func isDublicateTask(opc []structs.Task, task structs.Task) (result bool) {
-	for _, oc := range opc {
-		if oc.TaskID == task.TaskID {
-			return true
-		}
-	}
-	return false
-}
-
-func remove(slice []structs.Task, s int) []structs.Task {
-	return append(slice[:s], slice[s+1:]...)
-}
-
 func (oper *operator) taskSender() {
 	var messages []structs.Task
 	db := oper.postgres.DB
 	rabbit := oper.rabbit
-	for {
-		for numEl, cache := range oper.opCache {
-			if time.Now().Unix() < cache.StartTime.Unix() {
-				continue
-			}
-			switch dbType := cache.DBType; dbType {
-			case "mongodb":
-				messages = mongodb.GetMessages(cache)
-			default:
-				log.Printf("Driver for Database %s not found", cache.DBType)
-				continue
-			}
-			for _, msg := range messages {
-				body, err := json.Marshal(msg)
-				if err != nil {
-					log.Println("Body", err)
-					continue
-				}
-				if err := rabbit.Publish(body); err != nil {
-					log.Println("Publish", err)
-					continue
-				}
-			}
-			if _, err := db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, cache.TaskID); err != nil {
-				log.Fatalln(err)
-				continue
-			}
-			oper.opCache = remove(oper.opCache, numEl)
+	for task := range oper.tasksChan {
+		switch dbType := task.DBType; dbType {
+		case "mongodb":
+			messages = mongodb.GetMessages(task)
+		default:
+			log.Printf("Driver for Database %s not found", task.DBType)
+			continue
 		}
-		time.Sleep(500 * time.Millisecond)
+		for _, msg := range messages {
+			body, err := json.Marshal(msg)
+			if err != nil {
+				log.Println("Body", err)
+				continue
+			}
+			if err := rabbit.Publish(body); err != nil {
+				log.Println("Publish", err)
+				continue
+			}
+		}
+		if _, err := db.Exec(consts.REQUESR_UPDATE_ACTIVE, false, task.TaskID); err != nil {
+			log.Fatalln(err)
+			continue
+		}
 	}
 }
 
 func (oper *operator) aggregator() {
 	var task = structs.Task{}
-	var psqlUpdateTime *time.Timer
 	db := oper.postgres.DB
 	refreshTimeScan := oper.postgres.RefreshTimeScan
-	psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
+	psqlUpdateTime := time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 	for {
 		select {
 		case <-psqlUpdateTime.C:
-			request := fmt.Sprintf(consts.REQUEST_GET_STARTTIME, time.Now().Unix())
+			tsNow := time.Now()
+			request := fmt.Sprintf(consts.REQUEST_GET_STARTTIME, tsNow.Month, tsNow.Day, tsNow.Hour, tsNow.Minute)
 			rows, err := db.Queryx(request)
 			if err != nil {
 				log.Println(err)
@@ -111,9 +92,7 @@ func (oper *operator) aggregator() {
 					psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 					continue
 				}
-				if !isDublicateTask(oper.opCache, task) {
-					oper.opCache = append(oper.opCache, task)
-				}
+				oper.tasksChan <- task
 			}
 			psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 		}

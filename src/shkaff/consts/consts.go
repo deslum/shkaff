@@ -31,7 +31,18 @@ const (
 	RMQ_URI_TEMPLATE  = "amqp://%s:%s@%s:%d/%s"
 	PSQL_URI_TEMPLATE = "postgres://%s:%s@%s:%d/%s?sslmode=disable"
 
-	REQUEST_GET_STARTTIME = "SELECT task_id, db_id, user_id, start_time, verb, thread_count, ipv6, gzip, host, port, databases, db_user, db_password,tp.\"type\" as db_type FROM shkaff.tasks t INNER JOIN shkaff.db_settings db ON t.db_settings_id = db.db_id INNER JOIN shkaff.types tp ON tp.type_id = db.\"type\" WHERE t.start_time <= to_timestamp(%d) AND t.is_active = true;"
+	REQUEST_GET_STARTTIME = `SELECT task_id, db.db_id, user_id, "verbose", thread_count,
+    ipv6, gzip, host, port, databases, db_user, db_password,tp.type as db_type
+	FROM shkaff.tasks t 
+	INNER JOIN shkaff.db_settings db 
+	ON t.db_id = db.db_id 
+	INNER JOIN shkaff.types tp ON tp.type_id = db.type_id
+	WHERE (months is null or months @> ARRAY[%d]) 
+	AND (days is null or days @> ARRAY[%d])
+	AND (hours is null or hours @> ARRAY[%d])
+	AND (minutes <= %d) 
+	AND t.is_active = true;`
+
 	REQUESR_UPDATE_ACTIVE = "UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2;"
 
 	MONGO_CLIENT_COMMAND  = "mongo"

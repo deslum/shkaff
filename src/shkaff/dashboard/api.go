@@ -97,6 +97,7 @@ func (api *API) getTask(c *gin.Context) {
 	}
 	task, err := api.psql.GetTask(taskIDInt)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}
