@@ -68,18 +68,38 @@ func (api *API) Run() {
 }
 
 func (api *API) createTask(c *gin.Context) {
-	res := []string{"Message", "Its works"}
-	c.JSON(http.StatusOK, res)
-	return
-}
-
-func (api *API) updateTask(c *gin.Context) {
-	taskIDInt, setString, err := api.checkParameters(c)
+	setStrings, err := api.checkParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	_, err = api.psql.UpdateTask(taskIDInt, setString)
+	_, err = api.psql.CreateTask(setStrings)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Status": "OK"})
+	return
+}
+
+func (api *API) updateTask(c *gin.Context) {
+	taskID := c.Param("TaskID")
+	taskIDInt, err := strconv.Atoi(taskID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.GetTask(taskIDInt)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	setStrings, err := api.checkParameters(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.UpdateTask(taskIDInt, setStrings)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return

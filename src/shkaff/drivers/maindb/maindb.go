@@ -69,6 +69,15 @@ func (ps *PSQL) GetLastTaskID() (id int, err error) {
 	return
 }
 
+func (ps *PSQL) CreateTask(setStrings string) (result sql.Result, err error) {
+	sqlString := fmt.Sprintf("CREATE shkaff.tasks SET %s", setStrings)
+	result, err = ps.DB.Exec(sqlString)
+	if err != nil {
+		return
+	}
+	return
+}
+
 func (ps *PSQL) UpdateTask(taskIDInt int, setStrings string) (result sql.Result, err error) {
 	sqlString := fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", setStrings, taskIDInt)
 	result, err = ps.DB.Exec(sqlString)
