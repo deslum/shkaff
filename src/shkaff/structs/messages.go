@@ -66,6 +66,19 @@ type APITask struct {
 	Minutes     string `db:"minutes"`
 }
 
+type APIDatabase struct {
+	DBID       int    `db:"db_id"`
+	UserID     int    `db:"user_id"`
+	TypeID     int    `db:"type_id"`
+	ServerName string `db:"server_name"`
+	CustomName string `db:"custom_name"`
+	Host       string `db:"host"`
+	Port       int    `db:"port"`
+	IsActive   bool   `db:"is_active"`
+	DbUser     string `db:"db_user"`
+	DbPassword string `db:"db_password"`
+}
+
 type StatMessage struct {
 	UserID          uint16    `db:"UserId" json:"uid"`
 	DbID            uint16    `db:"DbID" json:"did"`

@@ -49,6 +49,12 @@ func InitAPI() (api *API) {
 		v1.GET("/GetTask/:TaskID", api.getTask)
 		v1.DELETE("/DeleteTask/:TaskID", api.deleteTask)
 	}
+	{
+		v1.POST("/CreateDatabase", api.createTask)
+		v1.POST("/UpdateDatabase/:DatabaseID", api.updateDatabase)
+		v1.GET("/GetDatabase/:DatabaseID", api.getDatabase)
+		v1.DELETE("/DeleteDatabase/:DatabaseID", api.deleteDatabase)
+	}
 	//Statistic
 	{
 		v1.GET("/GetStat/:TaskID", api.getTaskStat)
@@ -68,7 +74,7 @@ func (api *API) Run() {
 }
 
 func (api *API) createTask(c *gin.Context) {
-	setStrings, err := api.checkParameters(c)
+	setStrings, err := api.checkTaskParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
@@ -105,7 +111,7 @@ func (api *API) updateTask(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}
-	setStrings, err := api.checkParameters(c)
+	setStrings, err := api.checkTaskParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
@@ -172,4 +178,84 @@ func (api *API) getTaskStat(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 	return
 
+}
+
+func (api *API) createDatabase(c *gin.Context) {
+	setStrings, err := api.checkDatabaseParameters(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.CreateDatabase(setStrings)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, "OK")
+	return
+}
+
+func (api *API) getDatabase(c *gin.Context) {
+	DatabaseID := c.Param("DatabaseID")
+	DatabaseIDInt, err := strconv.Atoi(DatabaseID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad DatabaseID"})
+		return
+	}
+	database, err := api.psql.GetDatabase(DatabaseIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	c.JSON(http.StatusOK, database)
+	return
+}
+func (api *API) updateDatabase(c *gin.Context) {
+	databaseID := c.Param("DatabaseID")
+	databaseIDInt, err := strconv.Atoi(databaseID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.GetDatabase(databaseIDInt)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	setStrings, err := api.checkDatabaseParameters(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.UpdateDatabase(databaseIDInt, setStrings)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Status": "OK"})
+	return
+}
+
+func (api *API) deleteDatabase(c *gin.Context) {
+	databaseID := c.Param("DatabaseID")
+	databaseIDInt, err := strconv.Atoi(databaseID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad DatabaseID"})
+		return
+	}
+	_, err = api.psql.GetDatabase(databaseIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	_, err = api.psql.DeleteDatabase(databaseIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Result": "Success"})
+	return
 }
