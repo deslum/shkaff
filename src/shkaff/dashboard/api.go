@@ -12,21 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// type PostTask struct {
-// 	TaskName    string    `json:"task_name" db:"task_name"`
-// 	Verb        int       `json:"verb" db:"verb"`
-// 	ThreadCount int       `json:"thread_count" db:"thread_count"`
-// 	Gzip        bool      `json:"gzip" db:"gzip"`
-// 	Ipv6        bool      `json:"ipv6" db:"ipv6"`
-// 	Host        string    `json:"host" db:"host"`
-// 	Port        int       `json:"port" db:"port"`
-// 	StartTime   time.Time `json:"start_time" db:"start_time"`
-// 	DBUser      string    `json:"db_user" db:"db_user"`
-// 	DBPassword  string    `json:"db_password" db:"db_password"`
-// 	Database    string    `json:"database"`
-// 	Sheet       string    `json:"sheet"`
-// }
-
 type API struct {
 	cfg    *config.ShkaffConfig
 	report *stat.StatDB
@@ -42,18 +27,26 @@ func InitAPI() (api *API) {
 		psql:   maindb.InitPSQL(),
 	}
 	v1 := api.router.Group("/api/v1")
-	//CRUD Operation with Tasks
+	//CRUD Operations with Users
 	{
-		v1.POST("/CreateTask", api.createTask)
-		v1.POST("/UpdateTask/:TaskID", api.updateTask)
-		v1.GET("/GetTask/:TaskID", api.getTask)
-		v1.DELETE("/DeleteTask/:TaskID", api.deleteTask)
+		v1.POST("/CreateUser", api.createUser)
+		v1.POST("/UpdateUser/:UserID", api.updateUser)
+		v1.GET("/GetUser/:UserID", api.getUser)
+		v1.DELETE("/DeleteUser/:UserID", api.deleteUser)
 	}
+	//CRUD Operations with DatabaseSettings
 	{
 		v1.POST("/CreateDatabase", api.createTask)
 		v1.POST("/UpdateDatabase/:DatabaseID", api.updateDatabase)
 		v1.GET("/GetDatabase/:DatabaseID", api.getDatabase)
 		v1.DELETE("/DeleteDatabase/:DatabaseID", api.deleteDatabase)
+	}
+	//CRUD Operations with Tasks
+	{
+		v1.POST("/CreateTask", api.createTask)
+		v1.POST("/UpdateTask/:TaskID", api.updateTask)
+		v1.GET("/GetTask/:TaskID", api.getTask)
+		v1.DELETE("/DeleteTask/:TaskID", api.deleteTask)
 	}
 	//Statistic
 	{
@@ -211,6 +204,7 @@ func (api *API) getDatabase(c *gin.Context) {
 	c.JSON(http.StatusOK, database)
 	return
 }
+
 func (api *API) updateDatabase(c *gin.Context) {
 	databaseID := c.Param("DatabaseID")
 	databaseIDInt, err := strconv.Atoi(databaseID)
@@ -251,6 +245,87 @@ func (api *API) deleteDatabase(c *gin.Context) {
 		return
 	}
 	_, err = api.psql.DeleteDatabase(databaseIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Result": "Success"})
+	return
+}
+
+func (api *API) createUser(c *gin.Context) {
+	setStrings, err := api.checkUserParameters(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.CreateUser(setStrings)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, "OK")
+	return
+}
+
+func (api *API) getUser(c *gin.Context) {
+	UserID := c.Param("UserID")
+	UserIDInt, err := strconv.Atoi(UserID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad DatabaseID"})
+		return
+	}
+	user, err := api.psql.GetUser(UserIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+	return
+}
+
+func (api *API) updateUser(c *gin.Context) {
+	userID := c.Param("UserID")
+	userIDInt, err := strconv.Atoi(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.GetUser(userIDInt)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	setStrings, err := api.checkUserParameters(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	_, err = api.psql.UpdateUser(userIDInt, setStrings)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Status": "OK"})
+	return
+}
+
+func (api *API) deleteUser(c *gin.Context) {
+	userID := c.Param("UserID")
+	userIDInt, err := strconv.Atoi(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad DatabaseID"})
+		return
+	}
+	_, err = api.psql.GetUser(userIDInt)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		return
+	}
+	_, err = api.psql.DeleteUser(userIDInt)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})

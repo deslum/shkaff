@@ -99,6 +99,18 @@ func (ps *PSQL) GetTaskByName(taskName string) (task structs.APITask, err error)
 
 func (ps *PSQL) CreateTask(setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys, dottedKeys []string
+	var returnID int
+	for key, value := range setStrings {
+		switch key {
+		case "db_id":
+			err = ps.DB.Get(&returnID, `SELECT user_id FROM shkaff.db_settings WHERE db_id = $1`, value.(int))
+			if err != nil {
+				errStr := fmt.Sprintf("Databases with ID %d not found", value.(int))
+				return nil, errors.New(errStr)
+			}
+		}
+		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+	}
 	for key := range setStrings {
 		keys = append(keys, key)
 		dottedKeys = append(dottedKeys, ":"+key)
@@ -115,6 +127,18 @@ func (ps *PSQL) CreateTask(setStrings map[string]interface{}) (result sql.Result
 
 func (ps *PSQL) UpdateTask(taskIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys []string
+	var returnID int
+	for key, value := range setStrings {
+		switch key {
+		case "db_id":
+			err = ps.DB.Get(&returnID, `SELECT user_id FROM shkaff.db_settings WHERE db_id = $1`, value.(int))
+			if err != nil {
+				errStr := fmt.Sprintf("Databases with ID %d not found", value.(int))
+				return nil, errors.New(errStr)
+			}
+		}
+		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+	}
 	for key := range setStrings {
 		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
 	}
@@ -175,6 +199,24 @@ func (ps *PSQL) UpdateDatabase(databaseIDInt int, setStrings map[string]interfac
 
 func (ps *PSQL) CreateDatabase(setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys, dottedKeys []string
+	var returnID int
+	for key, value := range setStrings {
+		switch key {
+		case "user_id":
+			err = ps.DB.Get(&returnID, `SELECT user_id FROM shkaff.users WHERE user_id = $1 AND is_active = true`, value.(int))
+			if err != nil {
+				errStr := fmt.Sprintf("Active user with ID %d not found", value.(int))
+				return nil, errors.New(errStr)
+			}
+		case "type_id":
+			err = ps.DB.Get(&returnID, `SELECT type_id FROM shkaff.types WHERE type_id = $1`, value.(int))
+			if err != nil {
+				errStr := fmt.Sprintf("Databases with typeID %d not found", value.(int))
+				return nil, errors.New(errStr)
+			}
+		}
+		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+	}
 	for key := range setStrings {
 		keys = append(keys, key)
 		dottedKeys = append(dottedKeys, ":"+key)
@@ -191,6 +233,50 @@ func (ps *PSQL) CreateDatabase(setStrings map[string]interface{}) (result sql.Re
 
 func (ps *PSQL) DeleteDatabase(databaseID int) (result sql.Result, err error) {
 	result, err = ps.DB.Exec("DELETE FROM shkaff.db_settings WHERE db_id = $1", databaseID)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) GetUser(userId int) (user structs.APIUser, err error) {
+	requestString := `SELECT * FROM shkaff.users WHERE user_id = $1`
+	err = ps.DB.Get(&user, requestString, userId)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) UpdateUser(userIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
+	var keys []string
+	cols := strings.Join(keys, ",")
+	sqlString := fmt.Sprintf("UPDATE shkaff.users SET %s WHERE db_id = %d", cols, userIDInt)
+	result, err = ps.DB.NamedExec(sqlString, setStrings)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) CreateUser(setStrings map[string]interface{}) (result sql.Result, err error) {
+	var keys, dottedKeys []string
+	for key := range setStrings {
+		keys = append(keys, key)
+		dottedKeys = append(dottedKeys, ":"+key)
+	}
+	cols := strings.Join(keys, ",")
+	dottedCols := strings.Join(dottedKeys, ",")
+	sqlString := fmt.Sprintf("INSERT INTO shkaff.users (%s) VALUES (%s)", cols, dottedCols)
+	result, err = ps.DB.NamedExec(sqlString, setStrings)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func (ps *PSQL) DeleteUser(userID int) (result sql.Result, err error) {
+	result, err = ps.DB.Exec("DELETE FROM shkaff.users WHERE user_id = $1", userID)
 	if err != nil {
 		return
 	}

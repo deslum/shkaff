@@ -79,6 +79,17 @@ type APIDatabase struct {
 	DbPassword string `db:"db_password"`
 }
 
+type APIUser struct {
+	UserID    int    `db:"user_id"`
+	Login     int    `db:"login"`
+	Password  string `db:"password"`
+	APIToken  string `db:"api_token"`
+	FirstName string `db:"first_name"`
+	LastName  int    `db:"last_name"`
+	IsActive  bool   `db:"is_active"`
+	IsAdmin   string `db:"is_admin"`
+}
+
 type StatMessage struct {
 	UserID          uint16    `db:"UserId" json:"uid"`
 	DbID            uint16    `db:"DbID" json:"did"`

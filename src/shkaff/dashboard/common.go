@@ -62,7 +62,6 @@ func (api *API) checkTaskParameters(c *gin.Context) (setStrings map[string]inter
 			} else {
 				setStrings[key] = "{}"
 			}
-		//TODO 28 in Febrary and 30th and 31th in any months
 		case "days":
 			if len(val) > 0 {
 				strVals := strings.Split(val, ",")
@@ -106,7 +105,6 @@ func (api *API) checkTaskParameters(c *gin.Context) (setStrings map[string]inter
 				return nil, errors.New(errStr)
 			}
 			setStrings[key] = valInt
-		//TODO Check if database exist
 		case "db_id":
 			valInt, err := strconv.Atoi(val)
 			if err != nil {
@@ -167,6 +165,38 @@ func (api *API) checkDatabaseParameters(c *gin.Context) (setStrings map[string]i
 			}
 			setStrings[key] = val
 		case "db_user", "db_password", "custom_name":
+			setStrings[key] = val
+		default:
+			errStr = fmt.Sprintf("Bad field %s", key)
+			return nil, errors.New(errStr)
+		}
+		setList = append(setList, setString)
+	}
+	return
+}
+
+func (api *API) checkUserParameters(c *gin.Context) (setStrings map[string]interface{}, err error) {
+	var errStr, setString string
+	var setList []string
+	var userUpdate map[string]string
+	setStrings = make(map[string]interface{})
+	c.BindJSON(&userUpdate)
+	for key, val := range userUpdate {
+		switch key {
+		case "login", "password", "api_token":
+			if val == "" {
+				errStr = fmt.Sprintf("In %s bad value %s", key, val)
+				return nil, errors.New(errStr)
+			}
+			setStrings[key] = val
+		case "is_active", "is_admin":
+			_, err := strconv.ParseBool(val)
+			if err != nil {
+				errStr = fmt.Sprintf("In %s bad value %s", key, val)
+				return nil, errors.New(errStr)
+			}
+			setStrings[key] = val
+		case "first_name", "last_name":
 			setStrings[key] = val
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)
