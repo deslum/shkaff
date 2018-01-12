@@ -163,12 +163,12 @@ func (api *API) getTaskStat(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
 		return
 	}
-	task, err := api.report.StandartStatSelect()
+	taskStat, err := api.report.StandartStatSelect()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, taskStat)
 	return
 
 }

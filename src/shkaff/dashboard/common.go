@@ -1,6 +1,8 @@
 package dashboard
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -164,7 +166,11 @@ func (api *API) checkDatabaseParameters(c *gin.Context) (setStrings map[string]i
 				return nil, errors.New(errStr)
 			}
 			setStrings[key] = val
-		case "db_user", "db_password", "custom_name":
+		case "db_password":
+			hasher := md5.New()
+			hasher.Write([]byte(val))
+			setStrings[key] = hex.EncodeToString(hasher.Sum(nil))
+		case "db_user", "custom_name":
 			setStrings[key] = val
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)
