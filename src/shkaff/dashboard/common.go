@@ -166,11 +166,7 @@ func (api *API) checkDatabaseParameters(c *gin.Context) (setStrings map[string]i
 				return nil, errors.New(errStr)
 			}
 			setStrings[key] = val
-		case "db_password":
-			hasher := md5.New()
-			hasher.Write([]byte(val))
-			setStrings[key] = hex.EncodeToString(hasher.Sum(nil))
-		case "db_user", "custom_name":
+		case "db_user", "custom_name", "db_password":
 			setStrings[key] = val
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)
@@ -189,12 +185,20 @@ func (api *API) checkUserParameters(c *gin.Context) (setStrings map[string]inter
 	c.BindJSON(&userUpdate)
 	for key, val := range userUpdate {
 		switch key {
-		case "login", "password", "api_token":
+		case "login", "api_token":
 			if val == "" {
 				errStr = fmt.Sprintf("In %s bad value %s", key, val)
 				return nil, errors.New(errStr)
 			}
 			setStrings[key] = val
+		case "password":
+			if val == "" {
+				errStr = fmt.Sprintf("In %s bad value %s", key, val)
+				return nil, errors.New(errStr)
+			}
+			hasher := md5.New()
+			hasher.Write([]byte(val))
+			setStrings[key] = hex.EncodeToString(hasher.Sum(nil))
 		case "is_active", "is_admin":
 			_, err := strconv.ParseBool(val)
 			if err != nil {
