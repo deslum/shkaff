@@ -107,7 +107,6 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 	mp.ipv6 = task.Ipv6
 	mp.gzip = task.Gzip
 	mp.database = task.Database
-	mp.collection = task.Sheet
 	mp.parallelCollectionsNum = task.ThreadCount
 }
 

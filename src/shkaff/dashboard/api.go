@@ -67,6 +67,16 @@ func (api *API) Run() {
 }
 
 func (api *API) createTask(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	setStrings, err := api.checkTaskParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
@@ -93,6 +103,16 @@ func (api *API) createTask(c *gin.Context) {
 }
 
 func (api *API) updateTask(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	taskID := c.Param("TaskID")
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
@@ -119,6 +139,16 @@ func (api *API) updateTask(c *gin.Context) {
 }
 
 func (api *API) getTask(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	taskID := c.Param("TaskID")
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
@@ -136,6 +166,16 @@ func (api *API) getTask(c *gin.Context) {
 }
 
 func (api *API) deleteTask(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	taskID := c.Param("TaskID")
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
@@ -157,8 +197,18 @@ func (api *API) deleteTask(c *gin.Context) {
 }
 
 func (api *API) getTaskStat(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	taskID := c.Param("TaskID")
-	_, err := strconv.Atoi(taskID)
+	_, err = strconv.Atoi(taskID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad taskID"})
 		return
@@ -174,6 +224,16 @@ func (api *API) getTaskStat(c *gin.Context) {
 }
 
 func (api *API) createDatabase(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	setStrings, err := api.checkDatabaseParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
@@ -189,6 +249,16 @@ func (api *API) createDatabase(c *gin.Context) {
 }
 
 func (api *API) getDatabase(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	DatabaseID := c.Param("DatabaseID")
 	DatabaseIDInt, err := strconv.Atoi(DatabaseID)
 	if err != nil {
@@ -206,6 +276,16 @@ func (api *API) getDatabase(c *gin.Context) {
 }
 
 func (api *API) updateDatabase(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	databaseID := c.Param("DatabaseID")
 	databaseIDInt, err := strconv.Atoi(databaseID)
 	if err != nil {
@@ -232,6 +312,16 @@ func (api *API) updateDatabase(c *gin.Context) {
 }
 
 func (api *API) deleteDatabase(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	databaseID := c.Param("DatabaseID")
 	databaseIDInt, err := strconv.Atoi(databaseID)
 	if err != nil {
@@ -255,6 +345,16 @@ func (api *API) deleteDatabase(c *gin.Context) {
 }
 
 func (api *API) createUser(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	setStrings, err := api.checkUserParameters(c)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
@@ -270,6 +370,16 @@ func (api *API) createUser(c *gin.Context) {
 }
 
 func (api *API) getUser(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	UserID := c.Param("UserID")
 	UserIDInt, err := strconv.Atoi(UserID)
 	if err != nil {
@@ -287,6 +397,16 @@ func (api *API) getUser(c *gin.Context) {
 }
 
 func (api *API) updateUser(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	userID := c.Param("UserID")
 	userIDInt, err := strconv.Atoi(userID)
 	if err != nil {
@@ -313,6 +433,16 @@ func (api *API) updateUser(c *gin.Context) {
 }
 
 func (api *API) deleteUser(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+		return
+	}
+	isExist, err := api.psql.GetUserByToken(token)
+	if err != nil || !isExist {
+		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+		return
+	}
 	userID := c.Param("UserID")
 	userIDInt, err := strconv.Atoi(userID)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"shkaff/consts"
+	"shkaff/drivers/cache"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/producer"
@@ -20,10 +21,12 @@ type operator struct {
 	operatorWG sync.WaitGroup
 	postgres   *maindb.PSQL
 	rabbit     *producer.RMQ
+	taskCache  *cache.Cache
 }
 
 func InitOperator() (oper *operator) {
 	oper = &operator{
+		taskCache: cache.InitCacheDB(),
 		postgres:  maindb.InitPSQL(),
 		rabbit:    producer.InitAMQPProducer("mongodb"),
 		tasksChan: make(chan structs.Task),
@@ -87,7 +90,17 @@ func (oper *operator) aggregator() {
 					psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 					continue
 				}
-				oper.tasksChan <- task
+				isExist, err := oper.taskCache.ExistKV(task.UserID, task.DBSettingsID, task.TaskID)
+				if err != nil {
+					log.Println("LevelDB", err)
+					psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
+					continue
+				}
+				if !isExist {
+					oper.taskCache.SetKV(task.UserID, task.DBSettingsID, task.TaskID)
+					oper.tasksChan <- task
+				}
+
 			}
 			psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 		}

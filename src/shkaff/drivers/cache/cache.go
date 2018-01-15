@@ -1,14 +1,19 @@
 package cache
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"shkaff/consts"
-	"strings"
+	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
+)
+
+const (
+	TTL = 60 * 60 * 24 // 1 day = 24 hours = 84600 seconds
 )
 
 type Cache struct {
@@ -16,7 +21,7 @@ type Cache struct {
 }
 
 func InitCacheDB() (cache *Cache) {
-	err := os.MkdirAll(consts.CACHEPATH, 0644)
+	err := os.MkdirAll(consts.CACHEPATH, 0755)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -25,14 +30,15 @@ func InitCacheDB() (cache *Cache) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cache.DB.Close()
+
 	return
 
 }
 
-func (cache *Cache) SetKV(userID, dbID, taskID int, table, sheet string) (err error) {
+func (cache *Cache) SetKV(userID, dbID, taskID int) (err error) {
 	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
-	value := []byte(fmt.Sprintf("%s|%s", table, sheet))
+	value := make([]byte, 8)
+	binary.LittleEndian.PutUint64(value, uint64(time.Now().Unix()))
 	err = cache.DB.Put(key, value, nil)
 	if err != nil {
 		return err
@@ -40,23 +46,17 @@ func (cache *Cache) SetKV(userID, dbID, taskID int, table, sheet string) (err er
 	return
 }
 
-func (cache *Cache) GetKV(userID, dbID, taskID int) (table, sheet string, err error) {
-	var value []byte
+func (cache *Cache) GetKV(userID, dbID, taskID int) (timestamp int64, err error) {
 	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
-	value, err = cache.DB.Get(key, nil)
+	valB, err := cache.DB.Get(key, nil)
 	if err != nil {
-		return "", "", err
+		return 0, err
 	}
-	valueStr := string(value[:])
-	val := strings.Split(valueStr, "|")
-	if len(val) != 2 {
-		log.Printf("Value %s in key %s is bad\n", valueStr, key)
-		cache.Delete(key, nil)
-		return "", "", errors.New("Bad key-value")
+	timestamp = int64(binary.LittleEndian.Uint64(valB))
+	if timestamp < time.Now().Unix()+TTL {
+		return 0, errors.New("Expire key")
 	}
-	table = val[0]
-	sheet = val[1]
-	return table, sheet, nil
+	return timestamp, nil
 }
 
 func (cache *Cache) DeleteKV(userID, dbID, taskID int) (err error) {
@@ -71,8 +71,14 @@ func (cache *Cache) DeleteKV(userID, dbID, taskID int) (err error) {
 func (cache *Cache) ExistKV(userID, dbID, taskID int) (result bool, err error) {
 	key := []byte(fmt.Sprintf("%d|%d|%d", userID, dbID, taskID))
 	res, err := cache.Get(key, nil)
-	if err != nil {
-		return false, err
+	if err == nil {
+		timestamp := int64(binary.LittleEndian.Uint64(res))
+		if timestamp < time.Now().Unix()+TTL {
+			return false, nil
+		}
+	}
+	if err.Error() == "leveldb: not found" {
+		return false, nil
 	}
 	if res == nil {
 		return false, err

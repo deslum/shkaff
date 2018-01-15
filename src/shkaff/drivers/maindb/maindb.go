@@ -247,6 +247,18 @@ func (ps *PSQL) GetUser(userId int) (user structs.APIUser, err error) {
 	}
 	return
 }
+func (ps *PSQL) GetUserByToken(token string) (isExist bool, err error) {
+	var t string
+	requestString := `SELECT user_id FROM shkaff.users WHERE token = $1`
+	err = ps.DB.Get(&t, requestString, token)
+	if err != nil {
+		return false, err
+	}
+	if t != "" {
+		return true, err
+	}
+	return false, err
+}
 
 func (ps *PSQL) UpdateUser(userIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys []string
