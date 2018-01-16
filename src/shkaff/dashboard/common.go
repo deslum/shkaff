@@ -178,8 +178,7 @@ func (api *API) checkDatabaseParameters(c *gin.Context) (setStrings map[string]i
 }
 
 func (api *API) checkUserParameters(c *gin.Context) (setStrings map[string]interface{}, err error) {
-	var errStr, setString string
-	var setList []string
+	var errStr string
 	var userUpdate map[string]string
 	setStrings = make(map[string]interface{})
 	c.BindJSON(&userUpdate)
@@ -212,7 +211,6 @@ func (api *API) checkUserParameters(c *gin.Context) (setStrings map[string]inter
 			errStr = fmt.Sprintf("Bad field %s", key)
 			return nil, errors.New(errStr)
 		}
-		setList = append(setList, setString)
 	}
 	return
 }

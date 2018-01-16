@@ -81,13 +81,13 @@ type APIDatabase struct {
 
 type APIUser struct {
 	UserID    int    `db:"user_id"`
-	Login     int    `db:"login"`
+	Login     string `db:"login"`
 	Password  string `db:"password"`
 	APIToken  string `db:"api_token"`
 	FirstName string `db:"first_name"`
-	LastName  int    `db:"last_name"`
+	LastName  string `db:"last_name"`
 	IsActive  bool   `db:"is_active"`
-	IsAdmin   string `db:"is_admin"`
+	IsAdmin   bool   `db:"is_admin"`
 }
 
 type StatMessage struct {

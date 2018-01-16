@@ -40,7 +40,7 @@ func (qp *RMQ) InitConnection(queueName string) {
 			break
 		}
 		log.Printf("RMQ: %s not connected\n", qp.uri)
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 5)
 	}
 
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {

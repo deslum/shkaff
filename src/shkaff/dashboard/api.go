@@ -383,13 +383,13 @@ func (api *API) getUser(c *gin.Context) {
 	UserID := c.Param("UserID")
 	UserIDInt, err := strconv.Atoi(UserID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad DatabaseID"})
+		c.JSON(http.StatusNotFound, gin.H{"Error": "Bad UserID"})
 		return
 	}
 	user, err := api.psql.GetUser(UserIDInt)
 	if err != nil {
 		log.Println(err)
-		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
+		c.JSON(http.StatusNotFound, gin.H{"Error": "UserID not found"})
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -423,6 +423,7 @@ func (api *API) updateUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
+	log.Println(setStrings)
 	_, err = api.psql.UpdateUser(userIDInt, setStrings)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})

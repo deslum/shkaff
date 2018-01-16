@@ -33,10 +33,12 @@ func InitStat() (s *StatDB) {
 	s.mutex = sync.Mutex{}
 	s.uri = fmt.Sprintf(URI_TEMPLATE, cfg.STATBASE_HOST, cfg.STATBASE_PORT)
 	for {
-		if s.DB, err = sqlx.Open("clickhouse", s.uri); err != nil {
-
+		s.DB, err = sqlx.Open("clickhouse", s.uri)
+		if err == nil {
+			break
 		}
 		log.Printf("ClickHouse: %s not connected\n", s.uri)
+		time.Sleep(time.Second * 5)
 	}
 
 	go s.checkout()

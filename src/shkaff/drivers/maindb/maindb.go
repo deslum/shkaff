@@ -36,7 +36,7 @@ func InitPSQL() (ps *PSQL) {
 		if err == nil {
 			break
 		}
-		log.Printf("PSQL: %s not connected\n", ps.uri)
+		log.Printf("PSQL: %s not connected. Error %s\n", ps.uri, err.Error())
 		time.Sleep(time.Second * 5)
 	}
 	return
@@ -255,7 +255,7 @@ func (ps *PSQL) GetUser(userId int) (user structs.APIUser, err error) {
 }
 func (ps *PSQL) GetUserByToken(token string) (isExist bool, err error) {
 	var t string
-	requestString := `SELECT user_id FROM shkaff.users WHERE token = $1`
+	requestString := `SELECT user_id FROM shkaff.users WHERE api_token = $1`
 	err = ps.DB.Get(&t, requestString, token)
 	if err != nil {
 		return false, err
@@ -268,8 +268,11 @@ func (ps *PSQL) GetUserByToken(token string) (isExist bool, err error) {
 
 func (ps *PSQL) UpdateUser(userIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys []string
+	for key := range setStrings {
+		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+	}
 	cols := strings.Join(keys, ",")
-	sqlString := fmt.Sprintf("UPDATE shkaff.users SET %s WHERE db_id = %d", cols, userIDInt)
+	sqlString := fmt.Sprintf("UPDATE shkaff.users SET %s WHERE user_id = %d", cols, userIDInt)
 	result, err = ps.DB.NamedExec(sqlString, setStrings)
 	if err != nil {
 		return

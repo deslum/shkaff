@@ -7,7 +7,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - DEBUG=true
       - POSTGRES_PASSWORD=test
       - POSTGRES_USER=test
       - POSTGRES_DB=shkaff
@@ -81,13 +80,10 @@ services:
       context: ../.
       dockerfile: Dockerfile
     ports:
-    - 5500:8080 
-    depends_on:
-    - ClickHouse-Client
-    - ClickHouse-Server
-    - RabbitMQ
-    - MongoDB-Restore
-    - MongoDB
-    - PostgreSQL
+    - "5500:8080" 
     links: 
-    - "PostgreSQL:database"
+    - PostgreSQL:PostgreSQL
+    - ClickHouse-Server:ClickHouse-Server
+    - RabbitMQ:RabbitMQ
+    - MongoDB:MongoDB
+    - MongoDB-Restore:MongoDB-Restore
