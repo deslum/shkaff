@@ -5,6 +5,7 @@ import (
 	"log"
 	"shkaff/config"
 	"shkaff/consts"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -32,8 +33,13 @@ func InitAMQPProducer(queueName string) (qp *RMQ) {
 
 func (qp *RMQ) initConnection() {
 	var err error
-	if qp.Connect, err = amqp.Dial(qp.uri); err != nil {
-		log.Fatalln(err)
+	for {
+		qp.Connect, err = amqp.Dial(qp.uri)
+		if err == nil {
+			break
+		}
+		log.Printf("RMQ: %s not connected\n", qp.uri)
+		time.Sleep(time.Second * 2)
 	}
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {
 		log.Fatalln(err)
