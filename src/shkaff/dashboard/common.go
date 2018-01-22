@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,59 +46,59 @@ func (api *API) checkTaskParameters(c *gin.Context) (setStrings map[string]inter
 			}
 			setStrings[key] = val
 		case "months":
-			if len(val) > 0 {
-				strVals := strings.Split(val, ",")
-				for _, valStr := range strVals {
-					valInt, err := strconv.Atoi(valStr)
-					if err != nil {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-					if valInt < 1 || valInt > 12 {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-				}
-				setStrings[key] = val
-			} else {
-				setStrings[key] = "{}"
-			}
+			// if len(val) > 0 {
+			// 	strVals := strings.Split(val, ",")
+			// 	for _, valStr := range strVals {
+			// 		valInt, err := strconv.Atoi(valStr)
+			// 		if err != nil {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 		if valInt < 1 || valInt > 12 {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 	}
+			setStrings[key] = val
+			// } else {
+			// 	setStrings[key] = "{}"
+			// }
 		case "days":
-			if len(val) > 0 {
-				strVals := strings.Split(val, ",")
-				for _, valStr := range strVals {
-					valInt, err := strconv.Atoi(valStr)
-					if err != nil {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-					if valInt < 1 || valInt > 31 {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-				}
-				setStrings[key] = val
-			} else {
-				setStrings[key] = "{}"
-			}
+			// if len(val) > 0 {
+			// 	strVals := strings.Split(val, ",")
+			// 	for _, valStr := range strVals {
+			// 		valInt, err := strconv.Atoi(valStr)
+			// 		if err != nil {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 		if valInt < 1 || valInt > 31 {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 	}
+			setStrings[key] = val
+			// } else {
+			// 	setStrings[key] = "{}"
+			// }
 		case "hours":
-			if len(val) > 0 {
-				strVals := strings.Split(val, ",")
-				for _, valStr := range strVals {
-					valInt, err := strconv.Atoi(valStr)
-					if err != nil {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-					if valInt < 0 || valInt > 23 {
-						errStr = fmt.Sprintf("In %s bad value %s", key, val)
-						return nil, errors.New(errStr)
-					}
-				}
-				setStrings[key] = val
-			} else {
-				setStrings[key] = "{}"
-			}
+			// if len(val) > 0 {
+			// 	strVals := strings.Split(val, ",")
+			// 	for _, valStr := range strVals {
+			// 		valInt, err := strconv.Atoi(valStr)
+			// 		if err != nil {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 		if valInt < 0 || valInt > 23 {
+			// 			errStr = fmt.Sprintf("In %s bad value %s", key, val)
+			// 			return nil, errors.New(errStr)
+			// 		}
+			// 	}
+			setStrings[key] = val
+			// } else {
+			// 	setStrings[key] = "{}"
+			// }
 		case "minutes":
 			valInt, err := strconv.Atoi(val)
 			if err != nil || valInt < 0 || valInt > 60 {
@@ -114,7 +113,7 @@ func (api *API) checkTaskParameters(c *gin.Context) (setStrings map[string]inter
 				return nil, errors.New(errStr)
 			}
 			setStrings[key] = valInt
-		case "database":
+		case "databases":
 			setStrings[key] = val
 		default:
 			errStr = fmt.Sprintf("Bad field %s", key)

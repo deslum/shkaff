@@ -36,7 +36,7 @@ func InitAPI() (api *API) {
 	}
 	//CRUD Operations with DatabaseSettings
 	{
-		v1.POST("/CreateDatabase", api.createTask)
+		v1.POST("/CreateDatabase", api.createDatabase)
 		v1.POST("/UpdateDatabase/:DatabaseID", api.updateDatabase)
 		v1.GET("/GetDatabase/:DatabaseID", api.getDatabase)
 		v1.DELETE("/DeleteDatabase/:DatabaseID", api.deleteDatabase)
@@ -236,11 +236,13 @@ func (api *API) createDatabase(c *gin.Context) {
 	}
 	setStrings, err := api.checkDatabaseParameters(c)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
 	_, err = api.psql.CreateDatabase(setStrings)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
@@ -377,6 +379,7 @@ func (api *API) getUser(c *gin.Context) {
 	}
 	isExist, err := api.psql.GetUserByToken(token)
 	if err != nil || !isExist {
+		log.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
 		return
 	}

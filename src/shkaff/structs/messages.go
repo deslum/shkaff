@@ -38,7 +38,7 @@ type Task struct {
 	UserID         int    `json:"user_id" db:"user_id"`
 	Databases      string `json:"-" db:"databases"`
 	DBType         string `json:"-" db:"db_type"`
-	Verb           int    `json:"verb" db:"verbose"`
+	Verb           int    `json:"verb" db:"verb"`
 	ThreadCount    int    `json:"thread_count" db:"thread_count"`
 	Gzip           bool   `json:"gzip" db:"gzip"`
 	Ipv6           bool   `json:"ipv6" db:"ipv6"`
@@ -48,6 +48,7 @@ type Task struct {
 	DBPassword     string `json:"db_password" db:"db_password"`
 	Database       string `json:"database"`
 	Sheet          string `json:"sheet"`
+	IsDelete       bool   `json:"-" db:"is_delete"`
 }
 
 type APITask struct {
@@ -56,7 +57,7 @@ type APITask struct {
 	IsActive    bool   `db:"is_active"`
 	DBID        int    `db:"db_id"`
 	Databases   string `db:"databases"`
-	Verb        int    `db:"verbose"`
+	Verb        int    `db:"verb"`
 	ThreadCount int    `db:"thread_count"`
 	Gzip        bool   `db:"gzip"`
 	Ipv6        bool   `db:"ipv6"`
@@ -64,6 +65,7 @@ type APITask struct {
 	Days        string `db:"days"`
 	Hours       string `db:"hours"`
 	Minutes     string `db:"minutes"`
+	IsDelete    bool   `db:"is_delete"`
 }
 
 type APIDatabase struct {
@@ -77,6 +79,7 @@ type APIDatabase struct {
 	IsActive   bool   `db:"is_active"`
 	DbUser     string `db:"db_user"`
 	DbPassword string `db:"db_password"`
+	IsDelete   bool   `db:"is_delete"`
 }
 
 type APIUser struct {
@@ -88,6 +91,7 @@ type APIUser struct {
 	LastName  string `db:"last_name"`
 	IsActive  bool   `db:"is_active"`
 	IsAdmin   bool   `db:"is_admin"`
+	IsDelete  bool   `db:"is_delete"`
 }
 
 type StatMessage struct {
