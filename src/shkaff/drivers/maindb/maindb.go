@@ -115,9 +115,6 @@ func (ps *PSQL) CreateTask(setStrings map[string]interface{}) (result sql.Result
 				return nil, errors.New(errStr)
 			}
 		}
-		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
-	}
-	for key := range setStrings {
 		keys = append(keys, key)
 		dottedKeys = append(dottedKeys, ":"+key)
 	}
@@ -220,12 +217,9 @@ func (ps *PSQL) CreateDatabase(setStrings map[string]interface{}) (result sql.Re
 				return nil, errors.New(errStr)
 			}
 		}
-		keys = append(keys, fmt.Sprintf("%s=:%s", key, key))
+		keys = append(keys, key)
+		dottedKeys = append(dottedKeys, ":"+key)
 	}
-	// for key := range setStrings {
-	// 	keys = append(keys, key)
-	// 	dottedKeys = append(dottedKeys, ":"+key)
-	// }
 	cols := strings.Join(keys, ",")
 	dottedCols := strings.Join(dottedKeys, ",")
 	sqlString := fmt.Sprintf("INSERT INTO shkaff.db_settings (%s) VALUES (%s)", cols, dottedCols)
