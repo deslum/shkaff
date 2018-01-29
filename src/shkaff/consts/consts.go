@@ -32,7 +32,7 @@ const (
 	PSQL_URI_TEMPLATE = "postgres://%s:%s@%s:%d/%s?sslmode=disable"
 
 	REQUEST_GET_STARTTIME = `SELECT task_id, db.db_id, user_id, "verb", thread_count,
-    ipv6, gzip, host, port, databases, db_user, db_password,tp.type as db_type
+    ipv6, gzip, host, port, databases, db_user, db_password, dumpfolder, tp.type as db_type
 	FROM shkaff.tasks t 
 	INNER JOIN shkaff.db_settings db 
 	ON t.db_id = db.db_id 

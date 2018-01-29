@@ -17,7 +17,7 @@ func Test_mongoCliStruct_forEmptyDatabases(t *testing.T) {
 	}
 	m.forEmptyDatabases()
 	for _, x := range m.messages {
-		fmt.Println(x.Database, x.Sheet)
+		fmt.Println(x.Database)
 	}
 	t.Error("1")
 }

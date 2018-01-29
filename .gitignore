@@ -37,6 +37,7 @@ $RECYCLE.BIN/
 ### Linux ###
 .*
 !.gitignore
+.vscode
 *~
 
 ### SublimeText ###

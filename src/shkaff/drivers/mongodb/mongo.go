@@ -30,16 +30,8 @@ func (m *mongoCliStruct) forEmptyDatabases() {
 		return
 	}
 	for _, dbName := range dbNames {
-		collNames, err := session.DB(dbName).CollectionNames()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		for _, collName := range collNames {
-			m.task.Database = dbName
-			m.task.Sheet = collName
-			m.messages = append(m.messages, m.task)
-		}
+		m.task.Database = dbName
+		m.messages = append(m.messages, m.task)
 	}
 	return
 }
@@ -51,12 +43,9 @@ func (m *mongoCliStruct) forFillDatabases() {
 		log.Println("Error unmarshal databases", databases, err)
 		return
 	}
-	for base, sheets := range databases {
-		for _, sheet := range sheets {
-			m.task.Database = base
-			m.task.Sheet = sheet
-			m.messages = append(m.messages, m.task)
-		}
+	for base := range databases {
+		m.task.Database = base
+		m.messages = append(m.messages, m.task)
 	}
 	return
 }

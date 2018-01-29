@@ -46,8 +46,8 @@ type Task struct {
 	Port           int    `json:"port" db:"port"`
 	DBUser         string `json:"db_user" db:"db_user"`
 	DBPassword     string `json:"db_password" db:"db_password"`
+	DumpFolder     string `json:"dumpfolder" db:"dumpfolder"`
 	Database       string `json:"database"`
-	Sheet          string `json:"sheet"`
 	IsDelete       bool   `json:"-" db:"is_delete"`
 }
 
@@ -65,6 +65,7 @@ type APITask struct {
 	Days        string `db:"days"`
 	Hours       string `db:"hours"`
 	Minutes     string `db:"minutes"`
+	DumpFolder  string `db:"dumpfolder"`
 	IsDelete    bool   `db:"is_delete"`
 }
 
