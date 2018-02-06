@@ -38,6 +38,7 @@ $RECYCLE.BIN/
 .*
 !.gitignore
 .vscode
+shkaff
 *~
 
 ### SublimeText ###
