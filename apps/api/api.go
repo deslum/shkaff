@@ -1,19 +1,19 @@
-package dashboard
+package api
 
 import (
 	"fmt"
 	"log"
 	"net/http"
-	"shkaff/config"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/stat"
+	"shkaff/internal/options"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 type API struct {
-	cfg    *config.ShkaffConfig
+	cfg    *options.ShkaffConfig
 	report *stat.StatDB
 	router *gin.Engine
 	psql   *maindb.PSQL
@@ -21,7 +21,7 @@ type API struct {
 
 func InitAPI() (api *API) {
 	api = &API{
-		cfg:    config.InitControlConfig(),
+		cfg:    options.InitControlConfig(),
 		router: gin.Default(),
 		report: stat.InitStat(),
 		psql:   maindb.InitPSQL(),

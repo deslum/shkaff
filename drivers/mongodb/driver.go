@@ -7,10 +7,10 @@ import (
 	"log"
 	"os/exec"
 	"regexp"
-	"shkaff/config"
-	"shkaff/consts"
-	"shkaff/structs"
-	"shkaff/structs/databases"
+	"shkaff/internal/consts"
+	"shkaff/internal/databases"
+	"shkaff/internal/options"
+	"shkaff/internal/structs"
 	"strings"
 )
 
@@ -22,7 +22,7 @@ var (
 )
 
 type MongoParams struct {
-	cfg                    *config.ShkaffConfig
+	cfg                    *options.ShkaffConfig
 	host                   string
 	port                   int
 	login                  string
@@ -38,7 +38,7 @@ type MongoParams struct {
 
 func InitDriver() (mp databases.DatabaseDriver) {
 	return &MongoParams{
-		cfg: config.InitControlConfig(),
+		cfg: options.InitControlConfig(),
 	}
 }
 

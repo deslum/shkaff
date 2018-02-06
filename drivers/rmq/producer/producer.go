@@ -3,8 +3,8 @@ package producer
 import (
 	"fmt"
 	"log"
-	"shkaff/config"
-	"shkaff/consts"
+	"shkaff/internal/consts"
+	"shkaff/internal/options"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -19,7 +19,7 @@ type RMQ struct {
 }
 
 func InitAMQPProducer(queueName string) (qp *RMQ) {
-	cfg := config.InitControlConfig()
+	cfg := options.InitControlConfig()
 	qp = new(RMQ)
 	qp.uri = fmt.Sprintf(consts.RMQ_URI_TEMPLATE, cfg.RMQ_USER,
 		cfg.RMQ_PASS,

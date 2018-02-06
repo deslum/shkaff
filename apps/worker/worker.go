@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"shkaff/config"
+	"shkaff/apps/statsender"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
-	"shkaff/statsender"
-	"shkaff/structs"
-	"shkaff/structs/databases"
+	"shkaff/internal/databases"
+	"shkaff/internal/options"
+	"shkaff/internal/structs"
 	"sync"
 )
 
@@ -30,7 +30,7 @@ type worker struct {
 }
 
 func InitWorker() (ws *workersStarter) {
-	cfg := config.InitControlConfig()
+	cfg := options.InitControlConfig()
 	ws = new(workersStarter)
 	ws.workerCount = cfg.WORKERS["mongodb"]
 	stat := statsender.Run()

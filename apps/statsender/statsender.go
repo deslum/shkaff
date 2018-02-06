@@ -6,7 +6,7 @@ import (
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
 	"shkaff/drivers/stat"
-	"shkaff/structs"
+	"shkaff/internal/structs"
 	"time"
 )
 
@@ -98,7 +98,7 @@ func (statSender *statWorker) Run() {
 			log.Println("statWorker", err, "Failed JSON parse")
 			continue
 		}
-		
+
 		err = statSender.statDB.Insert(statMessage)
 		if err != nil {
 			log.Println("statWorker", err)

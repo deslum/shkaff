@@ -3,16 +3,16 @@ package main
 import (
 	"log"
 	"os"
-	"shkaff/config"
-	"shkaff/dashboard"
-	"shkaff/fork"
-	"shkaff/operator"
-	"shkaff/statsender"
-	"shkaff/worker"
+	"shkaff/apps/api"
+	"shkaff/apps/operator"
+	"shkaff/apps/statsender"
+	"shkaff/apps/worker"
+	"shkaff/internal/fork"
+	"shkaff/internal/options"
 )
 
 type Creater interface {
-	Init(action string, cfg config.ShkaffConfig) *Service
+	Init(action string, cfg options.ShkaffConfig) *Service
 }
 type Service interface {
 	Run()
@@ -28,8 +28,8 @@ func (self *shkaff) Init(action string) (srv Service) {
 		srv = worker.InitWorker()
 	case "StatWorker":
 		srv = statsender.InitStatSender()
-	case "Dashboard":
-		srv = dashboard.InitAPI()
+	case "API":
+		srv = api.InitAPI()
 	default:
 		log.Fatalf("Unknown Shkaff service name %s\n", action)
 	}
@@ -37,7 +37,7 @@ func (self *shkaff) Init(action string) (srv Service) {
 }
 
 func startShkaff() {
-	servicesName := []string{"Operator", "Worker", "StatWorker", "Dashboard"}
+	servicesName := []string{"Operator", "Worker", "StatWorker", "API"}
 	shkf := new(shkaff)
 	for _, name := range servicesName {
 		s := shkf.Init(name)

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"fmt"
-	"shkaff/config"
-	"shkaff/consts"
-	"shkaff/structs"
+	"shkaff/internal/consts"
+	"shkaff/internal/options"
+	"shkaff/internal/structs"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -23,7 +23,7 @@ type PSQL struct {
 
 func InitPSQL() (ps *PSQL) {
 	var err error
-	cfg := config.InitControlConfig()
+	cfg := options.InitControlConfig()
 	ps = new(PSQL)
 	ps.uri = fmt.Sprintf(consts.PSQL_URI_TEMPLATE, cfg.DATABASE_USER,
 		cfg.DATABASE_PASS,

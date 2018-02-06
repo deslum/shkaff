@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"fmt"
-	"shkaff/structs"
+	"shkaff/internal/structs"
 	"testing"
 )
 

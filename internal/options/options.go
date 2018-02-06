@@ -1,11 +1,11 @@
-package config
+package options
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"shkaff/consts"
-	"shkaff/logger"
+	"shkaff/internal/consts"
+	"shkaff/internal/logger"
 	"sync"
 
 	logging "github.com/op/go-logging"

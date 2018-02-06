@@ -3,8 +3,8 @@ package stat
 import (
 	"fmt"
 	"log"
-	"shkaff/config"
-	"shkaff/structs"
+	"shkaff/internal/options"
+	"shkaff/internal/structs"
 	"sync"
 	"time"
 
@@ -27,7 +27,7 @@ type StatDB struct {
 }
 
 func InitStat() (s *StatDB) {
-	cfg := config.InitControlConfig()
+	cfg := options.InitControlConfig()
 	var err error
 	s = new(StatDB)
 	s.mutex = sync.Mutex{}

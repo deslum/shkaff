@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"shkaff/structs"
+	"shkaff/internal/structs"
 	"time"
 
 	"gopkg.in/mgo.v2"
