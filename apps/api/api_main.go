@@ -18,6 +18,7 @@ type API struct {
 }
 
 func InitAPI() (api *API) {
+	gin.SetMode(gin.ReleaseMode)
 	api = &API{
 		cfg:    options.InitControlConfig(),
 		router: gin.Default(),

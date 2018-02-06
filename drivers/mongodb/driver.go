@@ -136,21 +136,20 @@ func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
 }
 
 func (mp *MongoParams) Restore(task *structs.Task) (err error) {
-	// var stderr bytes.Buffer
-	// mp.setDBSettings(task)
-	// log.Println(mp.ParamsToRestoreString())
-	// cmd := exec.Command("sh", "-c", mp.ParamsToRestoreString())
-	// cmd.Stderr = &stderr
-	// if err := cmd.Run(); err != nil {
-	// 	log.Println(fmt.Sprint(err) + ": " + stderr.String())
-	// 	return err
-	// }
-	// restoreResult := stderr.String()
-	// for _, restoreErrorPattern := range RESTORE_ERRORS {
-	// 	reResult := restoreErrorPattern.FindString(restoreResult)
-	// 	if reResult != "" {
-	// 		return errors.New(strings.TrimSpace(restoreResult))
-	// 	}
-	// }
+	var stderr bytes.Buffer
+	mp.setDBSettings(task)
+	cmd := exec.Command("sh", "-c", mp.ParamsToRestoreString())
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		log.Println(fmt.Sprint(err) + ": " + stderr.String())
+		return err
+	}
+	restoreResult := stderr.String()
+	for _, restoreErrorPattern := range RESTORE_ERRORS {
+		reResult := restoreErrorPattern.FindString(restoreResult)
+		if reResult != "" {
+			return errors.New(strings.TrimSpace(restoreResult))
+		}
+	}
 	return
 }

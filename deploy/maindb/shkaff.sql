@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS shkaff.tasks (
   gzip BOOLEAN NOT NULL DEFAULT true,
   db_id SMALLINT NOT NULL,
   months INTEGER[12] NOT NULL DEFAULT '{}',
-  dumpfolder VARCHAR(128) NOT NULL DEFAULT '/opt/',
+  dumpfolder VARCHAR(128) NOT NULL DEFAULT '/opt/dump',
   is_delete boolean NOT NULL DEFAULT false,
   days INTEGER[31] NOT NULL DEFAULT '{}',
   hours INTEGER[24] NOT NULL DEFAULT '{}',

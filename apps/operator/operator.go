@@ -97,7 +97,12 @@ func (oper *operator) aggregator() {
 					continue
 				}
 				if !isExist {
-					oper.taskCache.SetKV(task.UserID, task.DBSettingsID, task.TaskID)
+					err := oper.taskCache.SetKV(task.UserID, task.DBSettingsID, task.TaskID)
+					if err != nil {
+						log.Println(err)
+						psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
+						continue
+					}
 					oper.tasksChan <- task
 				}
 
