@@ -2,11 +2,12 @@ package consumer
 
 import (
 	"fmt"
-	"log"
 	"shkaff/internal/consts"
+	"shkaff/internal/logger"
 	"shkaff/internal/options"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/streadway/amqp"
 )
 
@@ -16,6 +17,7 @@ type RMQ struct {
 	Connect    *amqp.Connection
 	Publishing *amqp.Publishing
 	Msgs       <-chan amqp.Delivery
+	log        *logging.Logger
 }
 
 func InitAMQPConsumer() (qp *RMQ) {
@@ -26,25 +28,26 @@ func InitAMQPConsumer() (qp *RMQ) {
 		cfg.RMQ_HOST,
 		cfg.RMQ_PORT,
 		cfg.RMQ_VHOST)
+	qp.log = logger.GetLogs("RMQ Consumer")
 	return
 }
 
 func (qp *RMQ) InitConnection(queueName string) {
 	var err error
 	if queueName == "" {
-		log.Fatalln("Consumer queue name empty")
+		qp.log.Fatal("Consumer queue name empty")
 	}
 	for {
 		qp.Connect, err = amqp.Dial(qp.uri)
 		if err == nil {
 			break
 		}
-		log.Printf("RMQ: %s not connected\n", qp.uri)
+		qp.log.Errorf("RMQ: %s not connected\n", qp.uri)
 		time.Sleep(time.Second * 5)
 	}
 
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {
-		log.Fatalln(err)
+		qp.log.Fatal(err)
 	}
 	q, err := qp.Channel.QueueDeclare(
 		queueName, // name
@@ -55,14 +58,14 @@ func (qp *RMQ) InitConnection(queueName string) {
 		nil,       // arguments
 	)
 	if err != nil {
-		log.Fatalln(err, "Failed to declare a queue")
+		qp.log.Fatal(err, "Failed to declare a queue")
 	}
 	if err = qp.Channel.Qos(
 		10,    // prefetch count
 		0,     // prefetch size
 		false, // global
 	); err != nil {
-		log.Fatalln(err, "Failed to set QoS")
+		qp.log.Fatal(err, "Failed to set QoS")
 	}
 	if msgs, err := qp.Channel.Consume(
 		q.Name, // queue
@@ -73,7 +76,7 @@ func (qp *RMQ) InitConnection(queueName string) {
 		false,  // no-wait
 		nil,    // args
 	); err != nil {
-		log.Fatalln(err, "Failed to register a consumer")
+		qp.log.Fatal(err, "Failed to register a consumer")
 	} else {
 		qp.Msgs = msgs
 	}

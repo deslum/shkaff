@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/stat"
+	"shkaff/internal/logger"
 	"shkaff/internal/options"
 
 	"github.com/gin-gonic/gin"
+	logging "github.com/op/go-logging"
 )
 
 type API struct {
@@ -15,6 +16,7 @@ type API struct {
 	report *stat.StatDB
 	router *gin.Engine
 	psql   *maindb.PSQL
+	log    *logging.Logger
 }
 
 func InitAPI() (api *API) {
@@ -24,6 +26,7 @@ func InitAPI() (api *API) {
 		router: gin.Default(),
 		report: stat.InitStat(),
 		psql:   maindb.InitPSQL(),
+		log:    logger.GetLogs("Dashboard"),
 	}
 	v1 := api.router.Group("/api/v1")
 	//CRUD Operations with Users
@@ -56,11 +59,11 @@ func InitAPI() (api *API) {
 }
 
 func (api *API) Run() {
-	log.Println("Start Dashboard")
+	api.log.Info("Start Dashboard")
 	uri := fmt.Sprintf("%s:%d", api.cfg.SHKAFF_UI_HOST, api.cfg.SHKAFF_UI_PORT)
 	err := api.router.Run(uri)
 	if err != nil {
-		log.Fatalln(err)
+		api.log.Fatal(err)
 	}
 	return
 }

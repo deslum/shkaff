@@ -2,24 +2,28 @@ package statsender
 
 import (
 	"encoding/json"
-	"log"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/drivers/rmq/producer"
 	"shkaff/drivers/stat"
+	"shkaff/internal/logger"
 	"shkaff/internal/structs"
 	"time"
+
+	logging "github.com/op/go-logging"
 )
 
 type StatSender struct {
 	sChan    chan structs.StatMessage
 	producer *producer.RMQ
+	log      *logging.Logger
 }
 
 func Run() (statSender *StatSender) {
-	log.Println("Start StatSender")
 	statSender = new(StatSender)
 	statSender.sChan = make(chan structs.StatMessage)
 	statSender.producer = producer.InitAMQPProducer("shkaff_stat")
+	statSender.log = logger.GetLogs("StatSender")
+	statSender.log.Info("Start StatSender")
 	go statSender.statSender()
 	return
 }
@@ -62,12 +66,12 @@ func (statSender *StatSender) statSender() {
 		case statMsg := <-statSender.sChan:
 			msg, err := json.Marshal(statMsg)
 			if err != nil {
-				log.Println(err)
+				statSender.log.Error(err)
 				continue
 			}
 			err = statSender.producer.Publish(msg)
 			if err != nil {
-				log.Println(err)
+				statSender.log.Error(err)
 				continue
 			}
 		}
@@ -79,29 +83,31 @@ func (statSender *StatSender) statSender() {
 type statWorker struct {
 	consumer *consumer.RMQ
 	statDB   *stat.StatDB
+	log      *logging.Logger
 }
 
 func InitStatSender() (sw *statWorker) {
 	sw = new(statWorker)
 	sw.statDB = stat.InitStat()
 	sw.consumer = consumer.InitAMQPConsumer()
+	sw.log = logger.GetLogs("StatWorker")
 	return
 }
 
 func (statSender *statWorker) Run() {
-	log.Println("Start StatWorker")
+	statSender.log.Info("Start StatWorker")
 	var statMessage structs.StatMessage
 	statSender.consumer.InitConnection("shkaff_stat")
 	for message := range statSender.consumer.Msgs {
 		err := json.Unmarshal(message.Body, &statMessage)
 		if err != nil {
-			log.Println("statWorker", err, "Failed JSON parse")
+			statSender.log.Error(err)
 			continue
 		}
 
 		err = statSender.statDB.Insert(statMessage)
 		if err != nil {
-			log.Println("statWorker", err)
+			statSender.log.Error(err)
 			continue
 		}
 		message.Ack(false)

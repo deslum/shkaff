@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -41,7 +40,7 @@ func (api *API) getUser(c *gin.Context) {
 	}
 	isExist, err := api.psql.GetUserByToken(token)
 	if err != nil || !isExist {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
 		return
 	}
@@ -53,7 +52,7 @@ func (api *API) getUser(c *gin.Context) {
 	}
 	user, err := api.psql.GetUser(UserIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "UserID not found"})
 		return
 	}
@@ -88,7 +87,7 @@ func (api *API) updateUser(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
-	log.Println(setStrings)
+	api.log.Info(setStrings)
 	_, err = api.psql.UpdateUser(userIDInt, setStrings)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
@@ -117,13 +116,13 @@ func (api *API) deleteUser(c *gin.Context) {
 	}
 	_, err = api.psql.GetUser(userIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
 		return
 	}
 	_, err = api.psql.DeleteUser(userIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
 		return
 	}

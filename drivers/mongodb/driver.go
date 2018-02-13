@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"os/exec"
 	"regexp"
 	"shkaff/internal/consts"
@@ -52,6 +51,7 @@ func (mp *MongoParams) setDBSettings(task *structs.Task) {
 	mp.database = task.Database
 	mp.parallelCollectionsNum = task.ThreadCount
 	mp.dumpFolder = task.DumpFolder
+
 }
 
 func (mp *MongoParams) isUseAuth() bool {
@@ -99,7 +99,6 @@ func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 	cmd := exec.Command("sh", "-c", mp.ParamsToDumpString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		log.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
 	dumpResult := stderr.String()
@@ -141,7 +140,6 @@ func (mp *MongoParams) Restore(task *structs.Task) (err error) {
 	cmd := exec.Command("sh", "-c", mp.ParamsToRestoreString())
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		log.Println(fmt.Sprint(err) + ": " + stderr.String())
 		return err
 	}
 	restoreResult := stderr.String()

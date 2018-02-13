@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -21,13 +20,13 @@ func (api *API) createDatabase(c *gin.Context) {
 	}
 	setStrings, err := api.checkDatabaseParameters(c)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
 	_, err = api.psql.CreateDatabase(setStrings)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": err.Error()})
 		return
 	}
@@ -54,7 +53,7 @@ func (api *API) getDatabase(c *gin.Context) {
 	}
 	database, err := api.psql.GetDatabase(DatabaseIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
 		return
 	}
@@ -117,13 +116,13 @@ func (api *API) deleteDatabase(c *gin.Context) {
 	}
 	_, err = api.psql.GetDatabase(databaseIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
 		return
 	}
 	_, err = api.psql.DeleteDatabase(databaseIDInt)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "DatabaseID not found"})
 		return
 	}

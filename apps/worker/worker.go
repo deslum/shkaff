@@ -4,15 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"shkaff/apps/statsender"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
 	"shkaff/drivers/rmq/consumer"
 	"shkaff/internal/databases"
+	"shkaff/internal/logger"
 	"shkaff/internal/options"
 	"shkaff/internal/structs"
 	"sync"
+
+	logging "github.com/op/go-logging"
 )
 
 type workersStarter struct {
@@ -27,6 +29,7 @@ type worker struct {
 	postgres     *maindb.PSQL
 	workRabbit   *consumer.RMQ
 	stat         *statsender.StatSender
+	log          *logging.Logger
 }
 
 func InitWorker() (ws *workersStarter) {
@@ -42,6 +45,7 @@ func InitWorker() (ws *workersStarter) {
 			postgres:     maindb.InitPSQL(),
 			workRabbit:   consumer.InitAMQPConsumer(),
 			stat:         stat,
+			log:          logger.GetLogs("Worker"),
 		}
 		ws.workers = append(ws.workers, worker)
 	}
@@ -61,21 +65,21 @@ func (w *worker) worker() {
 	w.workRabbit.InitConnection(w.databaseName)
 	dbDriver, err := w.getDatabaseType()
 	if err != nil {
-		log.Println("Worker", err)
+		w.log.Error(err)
 		return
 	}
-	log.Printf("Start Worker for %s\n", w.databaseName)
+	w.log.Infof("Start Worker for %s\n", w.databaseName)
 	for message := range w.workRabbit.Msgs {
 		err := json.Unmarshal(message.Body, &task)
 		if err != nil {
-			log.Println("Worker", err, "Failed JSON parse")
+			w.log.Error(err)
 			continue
 		}
 		w.stat.SendStatMessage(3, task.UserID, task.DBID, task.TaskID, nil)
 		err = dbDriver.Dump(task)
 		if err != nil {
 			w.stat.SendStatMessage(5, task.UserID, task.DBID, task.TaskID, err)
-			log.Println(err)
+			w.log.Error(err)
 			continue
 		}
 		w.stat.SendStatMessage(4, task.UserID, task.DBID, task.TaskID, nil)
@@ -83,7 +87,7 @@ func (w *worker) worker() {
 		err = dbDriver.Restore(task)
 		if err != nil {
 			w.stat.SendStatMessage(8, task.UserID, task.DBID, task.TaskID, err)
-			log.Println(err)
+			w.log.Error(err)
 			continue
 		}
 		w.stat.SendStatMessage(7, task.UserID, task.DBID, task.TaskID, err)

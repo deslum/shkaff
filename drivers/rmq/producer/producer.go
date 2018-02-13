@@ -2,11 +2,12 @@ package producer
 
 import (
 	"fmt"
-	"log"
 	"shkaff/internal/consts"
+	"shkaff/internal/logger"
 	"shkaff/internal/options"
 	"time"
 
+	logging "github.com/op/go-logging"
 	"github.com/streadway/amqp"
 )
 
@@ -16,6 +17,7 @@ type RMQ struct {
 	Channel    *amqp.Channel
 	Connect    *amqp.Connection
 	Publishing *amqp.Publishing
+	log        *logging.Logger
 }
 
 func InitAMQPProducer(queueName string) (qp *RMQ) {
@@ -27,6 +29,7 @@ func InitAMQPProducer(queueName string) (qp *RMQ) {
 		cfg.RMQ_PORT,
 		cfg.RMQ_VHOST)
 	qp.queueName = queueName
+	qp.log = logger.GetLogs("RMQ Producer")
 	qp.initConnection()
 	return
 }
@@ -38,11 +41,11 @@ func (qp *RMQ) initConnection() {
 		if err == nil {
 			break
 		}
-		log.Printf("RMQ: %s not connected\n", qp.uri)
+		qp.log.Errorf("RMQ: %s not connected\n", qp.uri)
 		time.Sleep(time.Second * 5)
 	}
 	if qp.Channel, err = qp.Connect.Channel(); err != nil {
-		log.Fatalln(err)
+		qp.log.Fatal(err)
 	}
 	if _, err = qp.Channel.QueueDeclare(
 		qp.queueName, // name
@@ -52,7 +55,7 @@ func (qp *RMQ) initConnection() {
 		false,        // no-wait
 		nil,          // arguments
 	); err != nil {
-		log.Fatalln(err)
+		qp.log.Fatal(err)
 	}
 	qp.Publishing = new(amqp.Publishing)
 	qp.Publishing.ContentType = "application/json"

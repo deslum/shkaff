@@ -3,22 +3,24 @@ package maindb
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"strings"
 	"time"
 
 	"fmt"
 	"shkaff/internal/consts"
+	"shkaff/internal/logger"
 	"shkaff/internal/options"
 	"shkaff/internal/structs"
 
 	"github.com/jmoiron/sqlx"
+	logging "github.com/op/go-logging"
 )
 
 type PSQL struct {
 	uri             string
 	DB              *sqlx.DB
 	RefreshTimeScan int
+	log             *logging.Logger
 }
 
 func InitPSQL() (ps *PSQL) {
@@ -31,12 +33,13 @@ func InitPSQL() (ps *PSQL) {
 		cfg.DATABASE_PORT,
 		cfg.DATABASE_DB)
 	ps.RefreshTimeScan = cfg.REFRESH_DATABASE_SCAN
+	ps.log = logger.GetLogs("MainDB")
 	for {
 		ps.DB, err = sqlx.Connect("postgres", ps.uri)
 		if err == nil {
 			break
 		}
-		log.Printf("PSQL: %s not connected. Error %s\n", ps.uri, err.Error())
+		ps.log.Error("PSQL: %s not connected. Error %s\n", ps.uri, err.Error())
 		time.Sleep(time.Second * 5)
 	}
 	return
@@ -144,10 +147,10 @@ func (ps *PSQL) UpdateTask(taskIDInt int, setStrings map[string]interface{}) (re
 	}
 	cols := strings.Join(keys, ",")
 	sqlString := fmt.Sprintf("UPDATE shkaff.tasks SET %s WHERE task_id = %d", cols, taskIDInt)
-	log.Println(sqlString)
+	ps.log.Info(sqlString)
 	result, err = ps.DB.NamedExec(sqlString, setStrings)
 	if err != nil {
-		log.Println(err)
+		ps.log.Error(err)
 		return
 	}
 	return
@@ -223,7 +226,7 @@ func (ps *PSQL) CreateDatabase(setStrings map[string]interface{}) (result sql.Re
 	cols := strings.Join(keys, ",")
 	dottedCols := strings.Join(dottedKeys, ",")
 	sqlString := fmt.Sprintf("INSERT INTO shkaff.db_settings (%s) VALUES (%s)", cols, dottedCols)
-	log.Println(sqlString)
+	ps.log.Info(sqlString)
 	result, err = ps.DB.NamedExec(sqlString, setStrings)
 	if err != nil {
 		return

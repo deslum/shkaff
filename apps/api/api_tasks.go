@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -36,7 +35,7 @@ func (api *API) createTask(c *gin.Context) {
 	}
 	task, err := api.psql.GetTaskByName(taskName)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}
@@ -99,7 +98,7 @@ func (api *API) getTask(c *gin.Context) {
 	}
 	task, err := api.psql.GetTask(taskIDInt, false)
 	if err != nil {
-		log.Println(err)
+		api.log.Error(err)
 		c.JSON(http.StatusNotFound, gin.H{"Error": "TaskID not found"})
 		return
 	}

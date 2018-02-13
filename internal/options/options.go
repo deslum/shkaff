@@ -58,7 +58,7 @@ func InitControlConfig() *ShkaffConfig {
 		log.Fatalln(err)
 		return nil
 	}
-	cc.log = logger.InitLogger("config")
+	cc.log = logger.GetLogs("Config")
 	cc.validate()
 	return cc
 }
