@@ -15,25 +15,28 @@ type serv struct {
 type wrapped func()
 
 func (service *serv) Run(function wrapped) (string, error) {
-	usage := "Usage: shkaff install | remove | start | stop | status"
+	usage := "Usage: shkaff start | stop | restart | status"
 	if len(os.Args) > 1 {
 		command := os.Args[1]
 		switch command {
-		case "install":
-			return service.Install()
-		case "remove":
-			return service.Remove()
 		case "start":
+			function()
 			return service.Start()
 		case "stop":
 			return service.Stop()
+		case "restart":
+			status, _ := service.Stop()
+			log.Println(status)
+			function()
+			return service.Start()
 		case "status":
 			return service.Status()
 		default:
 			return usage, nil
 		}
+	} else {
+		return usage, nil
 	}
-	function()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, os.Kill, syscall.SIGTERM)
 	killSignal := <-interrupt

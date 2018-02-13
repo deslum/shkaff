@@ -16,6 +16,7 @@ type Creater interface {
 }
 type Service interface {
 	Run()
+	Stop()
 }
 
 type shkaff struct{}
@@ -45,6 +46,15 @@ func startShkaff() {
 	}
 }
 
+func stopShkaff() {
+	servicesName := []string{"Operator", "Worker", "StatWorker", "API"}
+	shkf := new(shkaff)
+	for _, name := range servicesName {
+		s := shkf.Init(name)
+		s.Stop()
+	}
+}
+
 func main() {
 	daemon, err := fork.InitDaemon()
 	if err != nil {
@@ -56,5 +66,5 @@ func main() {
 		log.Println(status, "\nError: ", err)
 		os.Exit(1)
 	}
-	log.Println(status, err)
+	log.Println(status)
 }

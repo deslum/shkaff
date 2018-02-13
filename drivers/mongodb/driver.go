@@ -106,7 +106,7 @@ func (mp *MongoParams) Dump(task *structs.Task) (err error) {
 	if reResult != "" {
 		return
 	}
-	return errors.New(dumpResult)
+	return errors.New("Restore: " + dumpResult)
 }
 func (mp *MongoParams) ParamsToRestoreString() (commandString string) {
 	var cmdLine []string
@@ -146,7 +146,7 @@ func (mp *MongoParams) Restore(task *structs.Task) (err error) {
 	for _, restoreErrorPattern := range RESTORE_ERRORS {
 		reResult := restoreErrorPattern.FindString(restoreResult)
 		if reResult != "" {
-			return errors.New(strings.TrimSpace(restoreResult))
+			return errors.New("Restore: " + strings.TrimSpace(restoreResult))
 		}
 	}
 	return

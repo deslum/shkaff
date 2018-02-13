@@ -17,7 +17,7 @@ import (
 	logging "github.com/op/go-logging"
 )
 
-type operator struct {
+type Operator struct {
 	tasksChan  chan structs.Task
 	operatorWG sync.WaitGroup
 	postgres   *maindb.PSQL
@@ -26,8 +26,8 @@ type operator struct {
 	log        *logging.Logger
 }
 
-func InitOperator() (oper *operator) {
-	oper = &operator{
+func InitOperator() (oper *Operator) {
+	oper = &Operator{
 		taskCache: cache.InitCacheDB(),
 		postgres:  maindb.InitPSQL(),
 		rabbit:    producer.InitAMQPProducer("mongodb"),
@@ -37,16 +37,23 @@ func InitOperator() (oper *operator) {
 	return
 }
 
-func (oper *operator) Run() {
+func (oper *Operator) Run() {
 	oper.operatorWG = sync.WaitGroup{}
 	oper.operatorWG.Add(2)
-	go oper.aggregator()
-	go oper.taskSender()
+	go oper.Aggregator()
+	go oper.TaskSender()
 	oper.log.Info("Start Operator")
 	oper.operatorWG.Wait()
 }
 
-func (oper *operator) taskSender() {
+func (oper *Operator) Stop() {
+	for i := 0; i < 2; i++ {
+		oper.operatorWG.Done()
+	}
+	oper.log.Info("Stop Operator")
+}
+
+func (oper *Operator) TaskSender() {
 	var messages []structs.Task
 	rabbit := oper.rabbit
 	for task := range oper.tasksChan {
@@ -72,7 +79,7 @@ func (oper *operator) taskSender() {
 	}
 }
 
-func (oper *operator) aggregator() {
+func (oper *Operator) Aggregator() {
 	var task = structs.Task{}
 	db := oper.postgres.DB
 	refreshTimeScan := oper.postgres.RefreshTimeScan

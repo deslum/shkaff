@@ -7,12 +7,11 @@ import (
 )
 
 func GetLogs(appName string) (log *logging.Logger) {
-	log = logging.MustGetLogger("shkaff")
+	log = logging.MustGetLogger(appName)
 	var format = logging.MustStringFormatter(
-		`%{color} %{shortfunc:-9s} %{level:-5s} %{time:15:04:05} %{color:reset} %{message}`,
+		`%{color} %{time:15:04:05} %{module:-12s} %{shortfunc:-9s} %{level:-5s}%{color:reset} %{message}`,
 	)
-	appName = ""
-	backend := logging.NewLogBackend(os.Stdout, appName, 0)
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
 	backend2Formatter := logging.NewBackendFormatter(backend, format)
 	logging.SetBackend(backend2Formatter)
 	return

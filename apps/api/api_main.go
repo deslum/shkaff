@@ -67,3 +67,7 @@ func (api *API) Run() {
 	}
 	return
 }
+
+func (api *API) Stop() {
+	api.log.Info("Stop Dashboard")
+}

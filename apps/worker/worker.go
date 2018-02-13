@@ -60,6 +60,12 @@ func (ws *workersStarter) Run() {
 	ws.workerWG.Wait()
 }
 
+func (ws *workersStarter) Stop() {
+	for w := 0; w < ws.workerCount; w++ {
+		ws.workerWG.Done()
+	}
+}
+
 func (w *worker) worker() {
 	var task *structs.Task
 	w.workRabbit.InitConnection(w.databaseName)

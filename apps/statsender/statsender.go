@@ -113,3 +113,12 @@ func (statSender *statWorker) Run() {
 		message.Ack(false)
 	}
 }
+
+func (statSender *statWorker) Stop() {
+	err := statSender.consumer.Channel.Close()
+	if err != nil {
+		statSender.log.Error(err)
+	}
+	statSender.log.Info("Stop StatWorker")
+
+}
