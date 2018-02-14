@@ -7,7 +7,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - DEBUG=true
       - POSTGRES_PASSWORD=test
       - POSTGRES_USER=test
       - POSTGRES_DB=shkaff
@@ -25,7 +24,6 @@ services:
       - "27017:27017"
     volumes:
       - ./mongodb_test:/opt
-#    command: "/opt/restore.sh"
 
   MongoDB-Restore:
     restart: always
@@ -38,21 +36,20 @@ services:
       - "27018:27017"
     volumes:
       - ./mongodb_test:/opt
-#    command: "/opt/restore.sh"
-
 
   RabbitMQ:
-      restart: always
-      image: "rabbitmq:latest"
-      environment:
-        - RABBITMQ_DEFAULT_USER=shkaff
-        - RABBITMQ_DEFAULT_PASS=shkaff
-        - RABBITMQ_DEFAULT_VHOST=shkaff_workers
-      ports:
-        - "15672:15672"
-        - "5672:5672"
-      volumes:    
-        - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"
+    restart: always
+    image: "rabbitmq:latest"
+    environment:
+      - RABBITMQ_DEFAULT_USER=shkaff
+      - RABBITMQ_DEFAULT_PASS=shkaff
+      - RABBITMQ_DEFAULT_VHOST=shkaff_workers
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:    
+      - "./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins"
+
 
   ClickHouse-Server:
     restart: always
@@ -72,3 +69,16 @@ services:
     volumes:
       - ./clickhouse:/opt
     command: "/opt/create_table.sh"
+
+  # shkaff:
+  #   build:
+  #     context: ../.
+  #     dockerfile: Dockerfile
+  #   ports:
+  #   - "5500:8080" 
+  #   links: 
+  #   - PostgreSQL:PostgreSQL
+  #   - ClickHouse-Server:ClickHouse-Server
+  #   - RabbitMQ:RabbitMQ
+  #   - MongoDB:MongoDB
+  #   - MongoDB-Restore:MongoDB-Restore

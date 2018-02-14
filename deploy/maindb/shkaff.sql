@@ -1,14 +1,17 @@
 CREATE SCHEMA IF NOT EXISTS shkaff;
 
+CREATE SEQUENCE shkaff.users_seq;
+
 CREATE TABLE IF NOT EXISTS shkaff.users (
-  user_id SMALLINT NOT NULL,
-  login VARCHAR(16) NULL,
-  password VARCHAR(32) NULL,
-  api_token VARCHAR(32) NULL,
-  first_name VARCHAR(32) NULL,
-  last_name VARCHAR(32) NULL,
-  is_active BOOLEAN NOT NULL,
-  is_admin BOOLEAN NOT NULL,
+  user_id SMALLINT NOT NULL DEFAULT NEXTVAL ('shkaff.users_seq'),
+  login VARCHAR(16) NOT NULL,
+  password VARCHAR(32) NOT NULL,
+  api_token VARCHAR(32) NOT NULL,
+  first_name VARCHAR(32) NOT NULL DEFAULT '',
+  last_name VARCHAR(32) NOT NULL DEFAULT '',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  is_delete boolean NOT NULL DEFAULT false,
   CONSTRAINT users_id_UNIQUE UNIQUE  (user_id),
   PRIMARY KEY (user_id),
   CONSTRAINT login_UNIQUE UNIQUE  (login),
@@ -18,110 +21,84 @@ CREATE SEQUENCE shkaff.types_seq;
 
 CREATE TABLE IF NOT EXISTS shkaff.types (
   type_id SMALLINT NOT NULL DEFAULT NEXTVAL ('shkaff.types_seq'),
-  type VARCHAR(16) NULL,
-  cmd_cli VARCHAR(16) NULL,
-  cmd_dump VARCHAR(16) NULL,
-  cmd_restore VARCHAR(16) NULL,
+  type VARCHAR(32) NULL,
+  cmd_cli VARCHAR(32) NULL,
+  cmd_dump VARCHAR(32) NULL,
+  cmd_restore VARCHAR(32) NULL,
   PRIMARY KEY (type_id),
-  CONSTRAINT type_id_UNIQUE UNIQUE  (type_id));
+  CONSTRAINT type_id_UNIQUE UNIQUE (type_id),
+  CONSTRAINT type_UNIQUE UNIQUE (type));
 
 CREATE SEQUENCE shkaff.db_settings_seq;
 
 CREATE TABLE IF NOT EXISTS shkaff.db_settings (
-  db_id int8 NOT NULL DEFAULT NEXTVAL ('shkaff.db_settings_seq'),
-  custom_name VARCHAR(32) NULL,
-  server_name VARCHAR(32) NULL,
-  host VARCHAR(40) NULL,
-  port SMALLINT NULL,
+  db_id SMALLINT NOT NULL DEFAULT NEXTVAL ('shkaff.db_settings_seq'),
   user_id SMALLINT NULL,
-  is_active BOOLEAN NOT NULL,
-  type SMALLINT NOT NULL,
-  db_user VARCHAR(40) NULL,
-  db_password VARCHAR(40) NULL, 
-  PRIMARY KEY (db_id, type),
+  type_id SMALLINT NULL,
+  server_name VARCHAR(40) NOT NULL DEFAULT '',
+  custom_name VARCHAR(40) NOT NULL DEFAULT '',
+  host VARCHAR(40) NOT NULL DEFAULT '0.0.0.0',
+  port SMALLINT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  db_user VARCHAR(40) NOT NULL DEFAULT '',
+  db_password VARCHAR(40) NOT NULL DEFAULT '',
+  is_delete boolean NOT NULL DEFAULT false, 
+  PRIMARY KEY (db_id, user_id, type_id),
   CONSTRAINT db_id_UNIQUE UNIQUE  (db_id),
   CONSTRAINT db_name_UNIQUE UNIQUE  (custom_name),
   CONSTRAINT fk_db_settings_types1
-    FOREIGN KEY (type)
+    FOREIGN KEY (type_id)
     REFERENCES shkaff.types (type_id)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);
  
- CREATE INDEX fk_db_settings_types1_idx ON shkaff.db_settings (type);
+ CREATE INDEX fk_db_settings_types1_idx ON shkaff.db_settings (type_id);
 
 CREATE SEQUENCE shkaff.tasks_seq;
 
 CREATE TABLE IF NOT EXISTS shkaff.tasks (
   task_id SMALLINT NOT NULL DEFAULT NEXTVAL ('shkaff.tasks_seq'),
-  task_name VARCHAR(32) NULL,
-  verb SMALLINT NULL,
-  start_time TIMESTAMP(0) NULL,
-  is_active boolean NOT NULL,
-  thread_count SMALLINT NULL,
-  ipv6 BOOLEAN NOT NULL,
-  databases JSON,
-  gzip BOOLEAN NOT NULL,
-  db_settings_id int8 NOT NULL,
-  db_settings_type SMALLINT NOT NULL,
+  task_name VARCHAR(32) NOT NULL,
+  verb SMALLINT NOT NULL DEFAULT 1,
+  is_active boolean NOT NULL DEFAULT false,
+  thread_count SMALLINT NULL DEFAULT 4,
+  ipv6 BOOLEAN NOT NULL DEFAULT false,
+  databases TEXT[] NOT NULL DEFAULT '{}',
+  gzip BOOLEAN NOT NULL DEFAULT true,
+  db_id SMALLINT NOT NULL,
+  months INTEGER[12] NOT NULL DEFAULT '{}',
+  dumpfolder VARCHAR(128) NOT NULL DEFAULT '/opt/dump',
+  is_delete boolean NOT NULL DEFAULT false,
+  days INTEGER[31] NOT NULL DEFAULT '{}',
+  hours INTEGER[24] NOT NULL DEFAULT '{}',
+  minutes SMALLINT NOT NULL,
   PRIMARY KEY (task_id),
-  CONSTRAINT task_id_UNIQUE UNIQUE  (task_id)
- ,
+  CONSTRAINT task_id_UNIQUE UNIQUE  (task_id),
+  CONSTRAINT task_name_UNIQUE UNIQUE (task_name),
   CONSTRAINT fk_tasks_db_settings1
-    FOREIGN KEY (db_settings_id , db_settings_type)
-    REFERENCES shkaff.db_settings (db_id , type)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION);
- 
- CREATE INDEX fk_tasks_db_settings1_idx ON shkaff.tasks (db_settings_id, db_settings_type);
-
-CREATE TABLE IF NOT EXISTS shkaff.users_has_db_settings (
-  users_user_id SMALLINT NOT NULL,
-  db_settings_db_id int8 NOT NULL,
-  PRIMARY KEY (users_user_id, db_settings_db_id)
- ,
-  CONSTRAINT fk_users_has_db_settings_users
-    FOREIGN KEY (users_user_id)
-    REFERENCES shkaff.users (user_id)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT fk_users_has_db_settings_db_settings1
-    FOREIGN KEY (db_settings_db_id)
+    FOREIGN KEY (db_id)
     REFERENCES shkaff.db_settings (db_id)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION);
  
- CREATE INDEX fk_users_has_db_settings_db_settings1_idx ON shkaff.users_has_db_settings (db_settings_db_id);
- CREATE INDEX fk_users_has_db_settings_users_idx ON shkaff.users_has_db_settings (users_user_id);
-
+ CREATE INDEX fk_tasks_db_settings1_idx ON shkaff.tasks (db_id);
 
 INSERT INTO shkaff.users (
-    user_id,
-    api_token,
-    first_name,
-    is_active,
-    is_admin,
-    last_name,
-    "login",
-    "password")
+    login,
+    password,
+    api_token)
 VALUES (
-    1,
-    '12345',
-    'Yuri',
-    true,
-    true,
-    'Bukatkin',
     'admin',
-    'admin'
+    MD5('admin'),
+    '12345'
 );
 
 INSERT INTO shkaff.types (
-    type_id,
     cmd_cli,
     cmd_dump,
     cmd_restore,
     "type")
 VALUES (
-    1,
     'mongo',
     'mongodump',
     'mongorestore',
@@ -129,60 +106,25 @@ VALUES (
 );
 
 INSERT INTO shkaff.db_settings (
-    db_id,
-    "type",
-    custom_name,
-    "host",
-    is_active,
-    port,
-    "server_name",
     user_id,
-    db_user,
-    db_password)
+    type_id,
+    port,
+    server_name)
 VALUES (
     1,
     1,
-    'Test',
-    '127.0.0.1',
-    true,
     27017,
-    'TestAdmin',
-    1,
-    '',
-    ''
+    'TestAdmin'
 );
-
-INSERT INTO shkaff.users_has_db_settings (
-    db_settings_db_id,
-    users_user_id)
-VALUES (
-    1,
-    1
-);
-
 
 INSERT INTO shkaff.tasks (
-    task_id,
-    "databases",
-    db_settings_id,
-    db_settings_type,
-    gzip,
-    ipv6,
+    db_id,
     is_active,
-    start_time,
     task_name,
-    thread_count,
-    verb)
+    minutes)
 VALUES (
     1,
-    '{}',
-    1,
-    1,
     true,
-    false,
-    true,
-    to_timestamp(1509465648),
     'FirstTask',
-    5,
-    3
+    20
 );
