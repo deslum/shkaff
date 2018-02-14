@@ -58,5 +58,5 @@ const (
 	MONGO_GZIP_KEY        = "--gzip"
 	MONGO_PARALLEL_KEY    = "-j"
 
-	CACHEPATH = "./cache/"
+	CACHEPATH = "cache/"
 )
