@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"shkaff/internal/consts"
 	"shkaff/internal/logger"
 	"sync"
@@ -50,7 +52,11 @@ func InitControlConfig() *ShkaffConfig {
 	cc = &ShkaffConfig{}
 	var file []byte
 	var err error
-	if file, err = ioutil.ReadFile(consts.CONFIG_FILE); err != nil {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if file, err = ioutil.ReadFile(dir + "/" + consts.CONFIG_FILE); err != nil {
 		log.Fatalln(err)
 		return nil
 	}

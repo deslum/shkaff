@@ -46,15 +46,6 @@ func startShkaff() {
 	}
 }
 
-func stopShkaff() {
-	servicesName := []string{"Operator", "Worker", "StatWorker", "API"}
-	shkf := new(shkaff)
-	for _, name := range servicesName {
-		s := shkf.Init(name)
-		s.Stop()
-	}
-}
-
 func main() {
 	daemon, err := fork.InitDaemon()
 	if err != nil {
@@ -63,8 +54,8 @@ func main() {
 	}
 	status, err := daemon.Run(startShkaff)
 	if err != nil {
-		log.Println(status, "\nError: ", err)
-		os.Exit(1)
+		log.Println(status, "\nError+++: ", err)
+		os.Exit(3)
 	}
 	log.Println(status)
 }
