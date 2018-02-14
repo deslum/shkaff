@@ -27,12 +27,16 @@ type Operator struct {
 }
 
 func InitOperator() (oper *Operator) {
+	var err error
 	oper = &Operator{
-		taskCache: cache.InitCacheDB(),
 		postgres:  maindb.InitPSQL(),
 		rabbit:    producer.InitAMQPProducer("mongodb"),
 		tasksChan: make(chan structs.Task),
 		log:       logger.GetLogs("Operator"),
+	}
+	oper.taskCache, err = cache.InitCacheDB()
+	if err != nil {
+		oper.log.Fatal(err)
 	}
 	return
 }
