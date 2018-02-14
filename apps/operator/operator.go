@@ -3,6 +3,7 @@ package operator
 import (
 	"encoding/json"
 	"fmt"
+	"shkaff/apps/statsender"
 	"shkaff/drivers/cache"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/mongodb"
@@ -24,6 +25,7 @@ type Operator struct {
 	rabbit     *producer.RMQ
 	taskCache  *cache.Cache
 	log        *logging.Logger
+	stat       *statsender.StatSender
 }
 
 func InitOperator() (oper *Operator) {
@@ -33,6 +35,7 @@ func InitOperator() (oper *Operator) {
 		rabbit:    producer.InitAMQPProducer("mongodb"),
 		tasksChan: make(chan structs.Task),
 		log:       logger.GetLogs("Operator"),
+		stat:      statsender.Run(),
 	}
 	oper.taskCache, err = cache.InitCacheDB()
 	if err != nil {
@@ -112,13 +115,16 @@ func (oper *Operator) Aggregator() {
 					continue
 				}
 				if !isExist {
+					oper.stat.SendStatMessage(0, task.UserID, task.DBID, task.TaskID, nil)
 					err := oper.taskCache.SetKV(task.UserID, task.DBSettingsID, task.TaskID)
 					if err != nil {
 						oper.log.Error(err)
+						oper.stat.SendStatMessage(2, task.UserID, task.DBID, task.TaskID, err)
 						psqlUpdateTime = time.NewTimer(time.Duration(refreshTimeScan) * time.Second)
 						continue
 					}
 					oper.tasksChan <- task
+					oper.stat.SendStatMessage(1, task.UserID, task.DBID, task.TaskID, nil)
 				}
 
 			}

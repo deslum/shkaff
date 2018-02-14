@@ -15,8 +15,21 @@ import (
 const (
 	URI_TEMPLATE   = "tcp://%s:%d?debug=False"
 	CHECKOUT_TIME  = 15
-	INSERT_REQUEST = "INSERT INTO shkaff_stat (UserId, DbID, TaskId, NewOperator, SuccessOperator, FailOperator, ErrorOperator, NewDump, SuccessDump, FailDump, ErrorDump, NewRestore, SuccessRestore, FailRestore, ErrorRestore, CreateDate) VALUES (:UserId, :DbID, :TaskId, :NewOperator, :SuccessOperator, :FailOperator, :ErrorOperator, :NewDump, :SuccessDump, :FailDump, :ErrorDump, :NewRestore, :SuccessRestore, :FailRestore, :ErrorRestore, :CreateDate)"
-	SELECT_REQUEST = "SELECT UserId, DbID, TaskId, sum(NewOperator), sum(SuccessOperator), sum(FailOperator), sum(NewDump), sum(SuccessDump), sum(FailDump), sum(NewRestore), sum(SuccessRestore), sum(FailRestore) FROM shkaff_stat GROUP BY UserId, DbID, TaskId"
+	INSERT_REQUEST = `
+	INSERT INTO shkaff_stat (UserId, DbID, TaskId, NewOperator,SuccessOperator,
+		FailOperator, ErrorOperator, NewDump, SuccessDump, FailDump, ErrorDump,
+		NewRestore, SuccessRestore, FailRestore, ErrorRestore, CreateDate)
+	VALUES (:UserId, :DbID, :TaskId, :NewOperator, :SuccessOperator,
+		:FailOperator, :ErrorOperator, :NewDump, :SuccessDump, :FailDump, :ErrorDump,
+		:NewRestore, :SuccessRestore, :FailRestore, :ErrorRestore, :CreateDate)`
+
+	SELECT_REQUEST = `
+	SELECT UserId, DbID, TaskId, sum(NewOperator) as NewOperator, 
+	 sum(SuccessOperator) as SuccessOperator, sum(FailOperator) as FailOperator,
+	 sum(NewDump) as NewDump, sum(SuccessDump) as SuccessDump, sum(FailDump) as FailDump,
+	 sum(NewRestore) as NewRestore, sum(SuccessRestore) as SuccessRestore,
+	 sum(FailRestore) as FailRestore  
+	FROM shkaff_stat GROUP BY UserId, DbID, TaskId`
 )
 
 type StatDB struct {
