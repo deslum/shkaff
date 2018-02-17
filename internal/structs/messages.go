@@ -68,6 +68,11 @@ type APITask struct {
 	DumpFolder  string `db:"dumpfolder"`
 	IsDelete    bool   `db:"is_delete"`
 }
+type APITasks struct {
+	TaskID     int    `db:"task_id"`
+	TaskName   string `db:"task_name"`
+	ServerName string `db:"server_name"`
+}
 
 type APIDatabase struct {
 	DBID       int    `db:"db_id"`

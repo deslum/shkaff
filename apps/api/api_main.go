@@ -2,6 +2,10 @@ package api
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
 	"shkaff/drivers/maindb"
 	"shkaff/drivers/stat"
 	"shkaff/internal/logger"
@@ -28,6 +32,16 @@ func InitAPI() (api *API) {
 		psql:   maindb.InitPSQL(),
 		log:    logger.GetLogs("Dashboard"),
 	}
+	currDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	api.router.LoadHTMLGlob(path.Join(currDir, "static", "html", "*"))
+	api.router.Static("css", path.Join(currDir, "static", "css"))
+	api.router.Static("js", path.Join(currDir, "static", "js"))
+	api.router.Static("plugins", path.Join(currDir, "static", "plugins"))
+	api.router.Static("img", path.Join(currDir, "static", "img"))
+
 	v1 := api.router.Group("/api/v1")
 	//CRUD Operations with Users
 	{
@@ -54,7 +68,22 @@ func InitAPI() (api *API) {
 	{
 		v1.GET("/GetStat/:TaskID", api.getTaskStat)
 	}
-
+	ui := api.router.Group("ui")
+	{
+		ui.GET("/get_users", api.getUsers)
+		ui.GET("/get_tasks", api.getTasks)
+		ui.GET("/get_databases", api.getDatabases)
+		ui.GET("/activate_task", api.changeTaskStatus)
+		ui.GET("/deactivate_task", api.changeTaskStatus)
+	}
+	page := api.router.Group("/")
+	{
+		page.GET("/", api.General)
+		page.GET("/dashboard", api.Dashboard)
+		page.GET("/databases", api.Databases)
+		page.GET("/tasks/active", api.ActiveTasks)
+		page.GET("/tasks/unactive", api.UnactiveTasks)
+	}
 	return
 }
 

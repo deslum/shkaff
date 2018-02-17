@@ -1,0 +1,147 @@
+<div class="row">
+	<div id="breadcrumb" class="col-xs-12">
+		<a href="#" class="show-sidebar">
+			<i class="fa fa-bars"></i>
+		</a>
+		<ol class="breadcrumb pull-left">
+			<li><a href="#">Home</a></li>
+			<li><a href="#">Tasks</a></li>
+		</ol>
+	</div>
+</div>
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<div class="no-move"></div>
+			</div>
+			<div class="box-content no-padding">
+				<table class="table table-bordered table-striped table-hover table-heading table-datatable" id="datatable-1">
+					<thead>
+						<tr>
+							<th>Task ID</th>
+							<th>Name</th>
+							<th>Database Name</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody id = "rows">
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+// Run Datables plugin and create 3 variants of settings
+function AllTables(){
+	TestTable1();
+	TestTable2();
+	TestTable3();
+	LoadSelect2Script(MakeSelect2);
+}
+function MakeSelect2(){
+	$('select').select2();
+	$('.dataTables_filter').each(function(){
+		$(this).find('label input[type=text]').attr('placeholder', 'Search');
+	});
+}
+
+function getTasks(isActive){
+	var url = "/ui/get_tasks?is_active=" + isActive 
+	$.ajax({
+			type: "GET",
+			url: url,
+			async: false,
+			success : function(data) {
+				result = data;
+		}
+	});
+	if (result === null){
+		return
+	}
+	result.forEach(function(item, i) {
+		$('#rows').append('<tr>\
+				<td>'+ item.TaskID +'</td>\
+				<td align="center">'+ item.TaskName +'</td>\
+				<td align="center">' + item.ServerName +'</td>\
+				<td align="center" id="action_buttons">\
+						<button type="button" class="btn btn-default btn-app-sm"><i class="fa fa-edit edit"></i></button>\
+						<button type="button" id="'+item.TaskID+'" class="btn btn-default btn-app-sm delete"><i class="fa fa-trash"></i></button>\
+				</td>\
+			</tr>\
+		');
+		if (isActive){
+			$('#action_buttons').append('<button type="button" id="'+item.TaskID+'" class="btn btn-default btn-app-sm deactivate"><i class="fa fa-square-o"></i></button>')
+		}else{
+			$('#action_buttons').append('<button type="button" id="'+item.TaskID+'" class="btn btn-default btn-app-sm activate"><i class="fa fa-plus-square-o"></i></button>')
+		}
+	});
+	return
+}
+
+function removeTask(taskId){
+	var url = "/api/v1/DeleteTask/"+taskId
+	$.ajax({
+		type: "DELETE",
+		url: url,
+		async: false,
+		success : function(data) {
+			location.reload();
+		}
+	});
+} 
+
+function activateTask(taskId){
+	var url = "/ui/activate_task?task_id="+taskId+"&activate=true"
+	$.ajax({
+		type: "GET",
+		url: url,
+		async: false,
+		success : function(data) {
+			location.reload();
+		}
+	});
+} 
+
+function deactivateTask(taskId){
+	var url = "/ui/deactivate_task?task_id="+taskId+"&activate=false"
+	$.ajax({
+		type: "GET",
+		url: url,
+		async: false,
+		success : function(data) {
+			location.reload();
+		}
+	});
+} 
+
+
+$(document).ready(function() {
+	// Load Datatables and run plugin on tables
+	switch({{.message}}) {
+	case 'active':
+    	getTasks(true); 
+		break;
+	case 'unactive':
+        getTasks(false); 
+		break;
+	default:
+		break
+	}
+	LoadDataTablesScripts(AllTables);
+	// Add Drag-n-Drop feature
+	WinMove();
+	$(".delete").click(function() {
+  		removeTask(this.id);
+	});
+	$(".activate").click(function() {
+  		activateTask(this.id);
+	});
+	$(".deactivate").click(function() {
+  		deactivateTask(this.id);
+	});
+	
+});
+</script>

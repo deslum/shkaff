@@ -13,7 +13,6 @@ src/golang.org/
 src/sourcegraph.com/
 deploy/leveldb/leveldb/
 dump/
-cache/
 src/gopkg.in/
 
 # Thumbnails

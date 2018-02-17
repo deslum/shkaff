@@ -74,6 +74,36 @@ func (ps *PSQL) GetTask(taskId int, isSimple bool) (task structs.APITask, err er
 	return
 }
 
+func (ps *PSQL) GetTasks(isActive string) (taskArr []structs.APITasks, err error) {
+	var task structs.APITasks
+	requestString := `SELECT t.task_id as task_id, t.task_name as task_name, db.server_name as server_name  
+	FROM shkaff.tasks t
+	INNER JOIN shkaff.db_settings db ON t.db_id = db.db_id
+	WHERE t.is_active = $1 and t.is_delete = false`
+	rows, err := ps.DB.Queryx(requestString, isActive)
+	if err != nil {
+		ps.log.Error(err)
+		return
+	}
+	for rows.Next() {
+		err := rows.StructScan(&task)
+		if err != nil {
+			ps.log.Error(err)
+			continue
+		}
+		taskArr = append(taskArr, task)
+	}
+	return
+}
+
+func (ps *PSQL) ChangeTaskStatus(taskID int, activeStatus bool) (err error) {
+	_, err = ps.DB.Exec(`UPDATE shkaff.tasks SET is_active = $1 WHERE task_id = $2`, activeStatus, taskID)
+	if err != nil {
+		return
+	}
+	return
+}
+
 func (ps *PSQL) GetLastTaskID() (id int, err error) {
 	err = ps.DB.Get(id, "SELECT Count(*) FROM shkaff.tasks WHERE is_delete = false")
 	if err != nil {
@@ -173,6 +203,29 @@ func (ps *PSQL) GetDatabase(databaseId int) (database structs.APIDatabase, err e
 	return
 }
 
+func (ps *PSQL) GetDatabases(isActive string, dbType string) (databaseArr []structs.APIDatabase, err error) {
+	var database structs.APIDatabase
+	requestString := `
+	SELECT db.*
+	FROM shkaff.db_settings db
+	INNER JOIN shkaff.types tp ON tp.type_id = db.type_id
+	WHERE is_active = $1 AND tp.type = $2`
+	rows, err := ps.DB.Queryx(requestString, isActive, dbType)
+	if err != nil {
+		ps.log.Error(err)
+		return
+	}
+	for rows.Next() {
+		err := rows.StructScan(&database)
+		if err != nil {
+			ps.log.Error(err)
+			continue
+		}
+		databaseArr = append(databaseArr, database)
+	}
+	return
+}
+
 func (ps *PSQL) UpdateDatabase(databaseIDInt int, setStrings map[string]interface{}) (result sql.Result, err error) {
 	var keys []string
 	var returnID int
@@ -250,6 +303,26 @@ func (ps *PSQL) GetUser(userId int) (user structs.APIUser, err error) {
 	}
 	return
 }
+
+func (ps *PSQL) GetUsers() (usersArr []structs.APIUser, err error) {
+	var user structs.APIUser
+	requestString := `SELECT * FROM shkaff.users`
+	rows, err := ps.DB.Queryx(requestString)
+	if err != nil {
+		ps.log.Error(err)
+		return
+	}
+	for rows.Next() {
+		err := rows.StructScan(&user)
+		if err != nil {
+			ps.log.Error(err)
+			continue
+		}
+		usersArr = append(usersArr, user)
+	}
+	return
+}
+
 func (ps *PSQL) GetUserByToken(token string) (isExist bool, err error) {
 	var t string
 	requestString := `SELECT user_id FROM shkaff.users WHERE api_token = $1 AND is_delete = false`

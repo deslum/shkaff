@@ -107,16 +107,16 @@ func (api *API) getTask(c *gin.Context) {
 }
 
 func (api *API) deleteTask(c *gin.Context) {
-	token := c.Query("token")
-	if token == "" {
-		c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
-		return
-	}
-	isExist, err := api.psql.GetUserByToken(token)
-	if err != nil || !isExist {
-		c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
-		return
-	}
+	// token := c.Query("token")
+	// if token == "" {
+	// 	c.JSON(http.StatusNotFound, gin.H{"Error": "Token is empty"})
+	// 	return
+	// }
+	// isExist, err := api.psql.GetUserByToken(token)
+	// if err != nil || !isExist {
+	// 	c.JSON(http.StatusNotFound, gin.H{"Error": "User with this token not found"})
+	// 	return
+	// }
 	taskID := c.Param("TaskID")
 	taskIDInt, err := strconv.Atoi(taskID)
 	if err != nil {
